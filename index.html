@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#00ffcc">
 <meta name="description" content="FLUXTRAP — A masocore platformer where nothing is fair and everything kills you.">
-<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;FLUXTRAP&quot;,&quot;short_name&quot;:&quot;FLUXTRAP&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;fullscreen&quot;,&quot;background_color&quot;:&quot;#04060f&quot;,&quot;theme_color&quot;:&quot;#00ffcc&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2304060f'/%3E%3Crect x='56' y='48' width='80' height='88' rx='10' fill='%23e0f0ff' stroke='%2300ffcc' stroke-width='4'/%3E%3Ccircle cx='96' cy='90' r='22' fill='%2300ffcc'/%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <title>FLUXTRAP</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
@@ -26,7 +25,6 @@ html,body{
   touch-action:none;user-select:none;
 }
 
-/* ── LAYOUT ── */
 #root{display:flex;flex-direction:column;width:100%;height:100%}
 #hud-top{
   background:var(--hud);border-bottom:1px solid #0f2030;
@@ -44,7 +42,6 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   flex-shrink:0
 }
 
-/* HUD */
 .hud-grp{display:flex;flex-direction:column;align-items:center;gap:1px}
 .hud-lbl{font-size:8px;color:#335;letter-spacing:2px;text-transform:uppercase}
 .hud-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--c)}
@@ -58,7 +55,6 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 }
 #h-msg.show{opacity:1}
 
-/* CONTROLS */
 .btn-grp{display:flex;gap:8px}
 .ctrl-btn{
   border-radius:8px;background:#080c18;
@@ -82,7 +78,6 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 #btn-jump{font-size:16px;letter-spacing:0}
 #dpad-mid{width:52px;height:52px}
 
-/* OVERLAY */
 #overlay{
   position:absolute;inset:0;z-index:20;
   background:rgba(4,6,15,.92);
@@ -97,7 +92,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   color:var(--c);text-shadow:0 0 30px var(--c),0 0 60px var(--c);
   letter-spacing:4px;text-align:center;line-height:1
 }
-#ov-sub{font-size:12px;color:#556;letter-spacing:3px;text-align:center;padding:0 20px}
+#ov-sub{font-size:12px;color:#556;letter-spacing:3px;text-align:center}
 #ov-tip{
   font-size:11px;color:var(--y);letter-spacing:1px;text-align:center;
   padding:8px 16px;border:1px solid #221a00;border-radius:4px;
@@ -112,20 +107,11 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   transition:background .1s;margin-top:4px
 }
 .ov-btn:active,.ov-btn:hover{background:#fff}
-.ov-btn.alt{background:var(--m);color:#000}
 
-/* FX */
 #arena::after{
   content:'';position:absolute;inset:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);
   pointer-events:none;z-index:1
-}
-@keyframes glitch{
-  0%,100%{transform:none;filter:none}
-  20%{transform:translate(-2px,1px);filter:hue-rotate(90deg)}
-  40%{transform:translate(2px,-1px);filter:hue-rotate(-60deg)}
-  60%{transform:skewX(1deg);filter:brightness(1.4)}
-  80%{transform:translate(-1px,2px);filter:saturate(2)}
 }
 @keyframes shake{
   0%,100%{transform:translate(0,0)}
@@ -171,12 +157,6 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 
 <script>
 'use strict';
-// ══════════════════════════════════════════════════
-//  FLUXTRAP — 100% ORIGINAL MASOCORE PLATFORMER
-//  No Nintendo assets — All drawn via Canvas 2D API
-// ═══════════════════��══════════════════════════════
-
-// ── AUDIO ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let actx = null;
 function initAudio(){ if(!actx) actx=new AudioCtx(); }
@@ -211,7 +191,8 @@ function sfx(type){
     } else if(type==='troll'){
       o.type='sine'; o.frequency.setValueAtTime(660,now);
       o.frequency.exponentialRampToValueAtTime(220,now+.4);
-      g.gain.setValueAtTime(.2,now); g.gain.exponentialRampToValueAtTime(.001,now+.5);
+      g.gain.setValueAtTime(.2,now); g.gain.setValueAtTime(.2,now+.35);
+      g.gain.exponentialRampToValueAtTime(.001,now+.5);
       o.start(now); o.stop(now+.5);
     } else if(type==='land'){
       o.type='square'; o.frequency.setValueAtTime(120,now);
@@ -222,31 +203,24 @@ function sfx(type){
   }catch(e){}
 }
 
-// ══════════════════════════════════════════════════
-//  TILE SYSTEM (100% original geometry)
-//  0 = air
-//  1 = solid floor
-//  2 = invisible trigger (activates on step)
-//  3 = visible spike
-//  4 = hidden spike (reveals when close)
-//  5 = fake block (disappears when stepped)
-//  6 = ghost platform (solid once, then air)
-//  7 = gravity trap (inverts gravity)
-//  8 = EXIT (trolls first time)
-//  9 = ice floor (low friction)
-// ══════════════════════════════════════════════════
 const CS = 24;
+const GRAVITY = 0.55;
+const JUMP_VEL = -11.5;
+const MOVE_SPD = 3.4;
+const FRIC_NORM = 0.78;
+const MAX_FALL = 18;
+const PLAYER_W = 18;
+const PLAYER_H = 20;
 
 // ══════════════════════════════════════════════════
-//  LEVELS (100% original designs, no Nintendo patterns)
+//  10 ZONES WITH UNIQUE TROLLS
 // ══════════════════════════════════════════════════
 const LEVELS = [
 // ZONE 01 — Tutorial del Dolor
 {
-  pw:20, ph:14,
-  sx:1, sy:11,
+  pw:20, ph:14, sx:1, sy:11,
   map:[
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0,0,1,
@@ -259,7 +233,7 @@ const LEVELS = [
     1,0,0,0,0,0,0,0,0,0,0,0,0,3,3,0,0,0,8,1,
     1,1,0,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
     {id:'drop1', cx:7, cy:6, r:1.5, action:'drop_block', blockCol:7, blockRow:1},
@@ -269,16 +243,15 @@ const LEVELS = [
 
 // ZONE 02 — Mentiras Sólidas
 {
-  pw:22, ph:14,
-  sx:1, sy:11,
+  pw:22, ph:14, sx:1, sy:11,
   map:[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,5,0,0,0,1,
-    1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1,
+    1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1,
     1,0,0,0,0,0,0,4,0,0,0,0,0,0,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,0,0,0,0,0,6,6,6,0,0,0,0,5,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,1,
     1,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,0,0,0,0,1,
@@ -295,16 +268,15 @@ const LEVELS = [
 
 // ZONE 03 — El Sádico
 {
-  pw:24, ph:15,
-  sx:1, sy:12,
+  pw:24, ph:15, sx:1, sy:12,
   map:[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,5,5,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,5,5,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,1,1,1,0,0,4,0,0,0,0,0,0,0,0,0,3,3,3,0,0,1,
     1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,3,0,0,0,0,6,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,3,0,0,0,0,6,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,0,0,0,0,0,0,0,0,7,0,0,0,0,5,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0,4,1,
     1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
@@ -317,77 +289,187 @@ const LEVELS = [
   triggers:[
     {id:'d1', cx:12, cy:7, r:1.5, action:'drop_block', blockCol:12, blockRow:1},
     {id:'d2', cx:22, cy:8, r:1.5, action:'drop_block', blockCol:22, blockRow:1},
-    {id:'sp2',cx:6, cy:11, r:1.5, action:'spike_wall', row:11, cols:[5,6,7]},
   ]
 },
 
-// ZONE 04 — El Laberinto Inverso
+// ZONE 04 — El Hueco Infinito
 {
-  pw:26, ph:16,
-  sx:1, sy:13,
+  pw:20, ph:16, sx:1, sy:13,
   map:[
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'inv2', cx:10, cy:8, r:1.2, action:'gravity_flip'},
+  ]
+},
+
+// ZONE 05 — La Cámara de los Secretos
+{
+  pw:24, ph:14, sx:1, sy:10,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'inv3', cx:12, cy:5, r:1.5, action:'gravity_flip'},
+    {id:'sp3', cx:5, cy:2, r:1.2, action:'reveal_spikes'},
+  ]
+},
+
+// ZONE 06 — El Piso es Lava
+{
+  pw:22, ph:13, sx:1, sy:10,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,4,3,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'d3', cx:8, cy:4, r:1.3, action:'drop_block', blockCol:8, blockRow:1},
+    {id:'d4', cx:16, cy:4, r:1.3, action:'drop_block', blockCol:16, blockRow:1},
+  ]
+},
+
+// ZONE 07 — Laberinto Vertical
+{
+  pw:18, ph:18, sx:1, sy:15,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,1,1,1,0,0,0,0,0,1,1,1,1,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'sp4', cx:9, cy:10, r:1.5, action:'reveal_spikes'},
+  ]
+},
+
+// ZONE 08 — Techo Caído
+{
+  pw:20, ph:12, sx:1, sy:9,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'inv4', cx:10, cy:5, r:1.2, action:'gravity_flip'},
+    {id:'reveal1', cx:5, cy:5, r:1.0, action:'reveal_spikes'},
+    {id:'reveal2', cx:15, cy:5, r:1.0, action:'reveal_spikes'},
+  ]
+},
+
+// ZONE 09 — El Final del Camino
+{
+  pw:26, ph:14, sx:1, sy:11,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,1,1,1,0,0,0,6,6,6,0,0,0,0,0,0,0,0,0,0,1,1,1,0,1,
-    1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,
-    1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,
-    1,0,0,1,0,0,0,4,0,0,0,0,0,0,0,0,0,0,4,0,0,1,0,0,0,1,
-    1,0,0,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,0,1,
+    1,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0,0,1,
+    1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
-    {id:'inv2', cx:20, cy:8, r:1.5, action:'gravity_flip'},
+    {id:'sp5', cx:13, cy:8, r:1.5, action:'reveal_spikes'},
+    {id:'inv5', cx:8, cy:2, r:1.2, action:'gravity_flip'},
   ]
 },
 
-// ZONE 05 — La Cámara Final
+// ZONE 10 — Você Morre Aqui
 {
-  pw:28, ph:17,
-  sx:1, sy:14,
+  pw:28, ph:15, sx:1, sy:12,
   map:[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0,0,0,1,
-    1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
-    {id:'drop3', cx:13, cy:5, r:1.5, action:'drop_block', blockCol:13, blockRow:1},
-    {id:'drop4', cx:19, cy:5, r:1.5, action:'drop_block', blockCol:19, blockRow:1},
+    {id:'inv6', cx:14, cy:7, r:1.5, action:'gravity_flip'},
+    {id:'drop5', cx:14, cy:3, r:1.0, action:'drop_block', blockCol:14, blockRow:1},
+    {id:'reveal6', cx:6, cy:9, r:1.2, action:'reveal_spikes'},
   ]
 },
 ];
-
-// ══════════════════════════════════════════════════
-//  PHYSICS ENGINE
-// ══════════════════════════════════════════════════
-const GRAVITY = 0.55;
-const JUMP_VEL = -11.5;
-const MOVE_SPD = 3.4;
-const FRIC_NORM = 0.78;
-const FRIC_ICE = 0.97;
-const MAX_FALL = 18;
-const PLAYER_W = 18;
-const PLAYER_H = 20;
 
 const state = {
   lvlIdx: 0,
@@ -399,9 +481,9 @@ const state = {
   triggers: null,
   firedTriggers: new Set(),
   ghostTiles: new Map(),
+  spikeReveal: new Set(),
   exitTrolled: false,
   fallingBlocks: [],
-  spikeReveal: new Set(),
   gravFlip: false,
   gravTimer: 0,
   running: false,
@@ -480,135 +562,17 @@ function setTile(col, row, val){
   if(col<0||row<0||col>=lvl.pw||row>=lvl.ph) return;
   state.map[row*lvl.pw + col] = val;
 }
-function isSolid(t){ return t===1||t===5||t===6||t===9; }
-function isKill(t){ return t===3||t===4; }
+function isSolid(t){ return t===1||t===5||t===6; }
 
-function collideTiles(px, py, vx, vy){
-  const p = state.player;
-  let nx = px+vx, ny = py+vy;
-  const w=PLAYER_W, h=PLAYER_H;
-  const gk=(c,r)=>c+','+r;
-
-  function checkAndReact(x, y){
-    const c0=Math.floor(x/CS), c1=Math.floor((x+w-1)/CS);
-    const r0=Math.floor(y/CS), r1=Math.floor((y+h-1)/CS);
-    for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
-      const t=tileAt(c,r);
-      if(t===0||t===2||t===8) continue;
-      if(t===4){
-        if(!state.spikeReveal.has(gk(c,r))){
-          state.spikeReveal.add(gk(c,r));
-          setTile(c,r,3);
-          sfx('trap');
-        }
-        continue;
-      }
-      if(t===7){
-        if(!state.firedTriggers.has(gk(c,r))){
-          state.firedTriggers.add(gk(c,r));
-          triggerGravFlip();
-        }
-        continue;
-      }
-      return true;
-    }
-    return false;
-  }
-
-  if(checkAndReact(nx, py)){ nx=px; p.vx=0; }
-  if(checkAndReact(nx, ny)){
-    if(vy>0) p.onGround=true;
-    ny=py; p.vy=0;
-  } else { p.onGround=false; }
-
-  {
-    const c0=Math.floor(nx/CS), c1=Math.floor((nx+w-1)/CS);
-    const r = Math.floor((ny+h)/CS);
-    for(let c=c0;c<=c1;c++){
-      const t=tileAt(c,r-1);
-      if(t===6){
-        const k=gk(c,r-1);
-        const cnt=(state.ghostTiles.get(k)||0)+1;
-        state.ghostTiles.set(k,cnt);
-        if(cnt>4){ setTile(c,r-1,0); state.ghostTiles.delete(k); sfx('trap'); }
-      }
-      if(t===5 && vy>0 && p.onGround){
-        const k2=gk(c,r-1);
-        if(!state.firedTriggers.has('f5'+k2)){
-          state.firedTriggers.add('f5'+k2);
-          setTimeout(()=>setTile(c,r-1,0),300);
-          sfx('trap');
-        }
-      }
-    }
-  }
-  return {nx, ny};
-}
-
-function touchesKillTile(x, y){
-  const w=PLAYER_W, h=PLAYER_H;
-  const c0=Math.floor(x/CS), c1=Math.floor((x+w-1)/CS);
-  const r0=Math.floor(y/CS), r1=Math.floor((y+h-1)/CS);
+function touchesSpike(x, y){
+  const w = PLAYER_W, h = PLAYER_H;
+  const c0 = Math.floor(x/CS), c1 = Math.floor((x+w-1)/CS);
+  const r0 = Math.floor(y/CS), r1 = Math.floor((y+h-1)/CS);
   for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
-    if(isKill(tileAt(c,r))) return true;
+    const t = tileAt(c,r);
+    if(t===3 || t===4) return true;
   }
   return false;
-}
-
-function touchesExit(x, y){
-  const w=PLAYER_W, h=PLAYER_H;
-  const c0=Math.floor(x/CS), c1=Math.floor((x+w-1)/CS);
-  const r0=Math.floor(y/CS), r1=Math.floor((y+h-1)/CS);
-  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
-    if(tileAt(c,r)===8) return {c,r};
-  }
-  return null;
-}
-
-function checkTriggers(){
-  const p = state.player;
-  const pc = (p.x+PLAYER_W/2)/CS, pr = (p.y+PLAYER_H/2)/CS;
-  for(const tr of state.triggers){
-    if(state.firedTriggers.has(tr.id)) continue;
-    const dist = Math.hypot(pc-tr.cx, pr-tr.cy);
-    if(dist<tr.r){
-      state.firedTriggers.add(tr.id);
-      execTrigger(tr);
-    }
-  }
-}
-
-function execTrigger(tr){
-  sfx('trap');
-  if(tr.action==='drop_block'){
-    state.fallingBlocks.push({c:tr.blockCol, fy:0, speed:2, landed:false});
-  } else if(tr.action==='gravity_flip'){
-    triggerGravFlip();
-  } else if(tr.action==='spike_wall'){
-    for(const c of tr.cols) setTile(c, tr.row, 3);
-  }
-}
-
-function triggerGravFlip(){
-  state.gravFlip = true;
-  state.gravTimer = 180;
-  showMsg('GRAVITY INVERTED');
-}
-
-function updateFallingBlocks(){
-  for(let i=state.fallingBlocks.length-1;i>=0;i--){
-    const fb = state.fallingBlocks[i];
-    if(fb.landed) continue;
-    fb.fy += fb.speed; fb.speed = Math.min(fb.speed+0.4, 14);
-    const row = Math.floor(fb.fy/CS);
-    if(row >= state.lvl.ph-1 || isSolid(tileAt(fb.c, row+1))){
-      setTile(fb.c, row, 1);
-      state.fallingBlocks.splice(i,1);
-      const p=state.player;
-      const pc=Math.floor((p.x+PLAYER_W/2)/CS);
-      if(pc===fb.c && Math.abs(p.y+PLAYER_H/2 - fb.fy)<CS*1.5) killPlayer();
-    }
-  }
 }
 
 function killPlayer(){
@@ -635,6 +599,114 @@ function respawn(){
   state.invinTimer = 80;
   state.gravFlip = false;
   state.gravTimer = 0;
+}
+
+function collideTiles(px, py, vx, vy){
+  const p = state.player;
+  let nx = px+vx, ny = py+vy;
+  const w = PLAYER_W, h = PLAYER_H;
+  const gk = (c,r) => c+','+r;
+
+  function checkSolid(x, y){
+    const c0 = Math.floor(x/CS), c1 = Math.floor((x+w-1)/CS);
+    const r0 = Math.floor(y/CS), r1 = Math.floor((y+h-1)/CS);
+    for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
+      const t = tileAt(c,r);
+      if(t===0 || t===2 || t===8) continue;
+      if(t===4){
+        if(!state.spikeReveal.has(gk(c,r))){
+          state.spikeReveal.add(gk(c,r));
+          setTile(c,r,3);
+          sfx('trap');
+        }
+        continue;
+      }
+      if(t===7){
+        if(!state.firedTriggers.has(gk(c,r))){
+          state.firedTriggers.add(gk(c,r));
+          state.gravFlip = true;
+          state.gravTimer = 180;
+          showMsg('GRAVITY INVERTED');
+          sfx('trap');
+        }
+        continue;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  if(checkSolid(nx, py)){ nx=px; p.vx=0; }
+  if(checkSolid(nx, ny)){
+    if(vy>0) p.onGround=true;
+    ny=py; p.vy=0;
+  } else { p.onGround=false; }
+
+  // Ghost tiles
+  {
+    const c0 = Math.floor(nx/CS), c1 = Math.floor((nx+w-1)/CS);
+    const r = Math.floor((ny+h)/CS);
+    for(let c=c0;c<=c1;c++){
+      const t = tileAt(c,r-1);
+      if(t===6){
+        const k = gk(c,r-1);
+        const cnt = (state.ghostTiles.get(k)||0)+1;
+        state.ghostTiles.set(k,cnt);
+        if(cnt>4){ setTile(c,r-1,0); state.ghostTiles.delete(k); sfx('trap'); }
+      }
+      if(t===5 && vy>0 && p.onGround){
+        const k2 = gk(c,r-1);
+        if(!state.firedTriggers.has('f5'+k2)){
+          state.firedTriggers.add('f5'+k2);
+          setTimeout(()=>setTile(c,r-1,0),300);
+          sfx('trap');
+        }
+      }
+    }
+  }
+  return {nx, ny};
+}
+
+function checkTriggers(){
+  const p = state.player;
+  const pc = (p.x+PLAYER_W/2)/CS, pr = (p.y+PLAYER_H/2)/CS;
+  for(const tr of state.triggers){
+    if(state.firedTriggers.has(tr.id)) continue;
+    const dist = Math.hypot(pc-tr.cx, pr-tr.cy);
+    if(dist<tr.r){
+      state.firedTriggers.add(tr.id);
+      execTrigger(tr);
+    }
+  }
+}
+
+function execTrigger(tr){
+  sfx('trap');
+  if(tr.action==='drop_block'){
+    state.fallingBlocks.push({c:tr.blockCol, fy:0, speed:2, landed:false});
+  } else if(tr.action==='spike_wall'){
+    for(const c of tr.cols) setTile(c, tr.row, 3);
+  } else if(tr.action==='reveal_spikes'){
+    const c = Math.floor(tr.cx), r = Math.floor(tr.cy);
+    setTile(c, r, 3);
+    setTile(c+1, r, 3);
+  }
+}
+
+function updateFallingBlocks(){
+  for(let i=state.fallingBlocks.length-1;i>=0;i--){
+    const fb = state.fallingBlocks[i];
+    if(fb.landed) continue;
+    fb.fy += fb.speed; fb.speed = Math.min(fb.speed+0.4, 14);
+    const row = Math.floor(fb.fy/CS);
+    if(row >= state.lvl.ph-1 || isSolid(tileAt(fb.c, row+1))){
+      setTile(fb.c, row, 1);
+      state.fallingBlocks.splice(i,1);
+      const p = state.player;
+      const pc = Math.floor((p.x+PLAYER_W/2)/CS);
+      if(pc===fb.c && Math.abs(p.y+PLAYER_H/2 - fb.fy)<CS*1.5) killPlayer();
+    }
+  }
 }
 
 function handleExit(ec, er){
@@ -664,10 +736,10 @@ function handleExit(ec, er){
 }
 
 function showMsg(txt){
-  const el=document.getElementById('h-msg');
+  const el = document.getElementById('h-msg');
   el.textContent=txt; el.classList.add('show');
   clearTimeout(showMsg._t);
-  showMsg._t=setTimeout(()=>el.classList.remove('show'),2200);
+  showMsg._t = setTimeout(()=>el.classList.remove('show'),2200);
 }
 
 function showOverlay(pre, title, sub, btnTxt, btnCb){
@@ -683,42 +755,27 @@ function showOverlay(pre, title, sub, btnTxt, btnCb){
 }
 function hideOverlay(){ document.getElementById('overlay').classList.add('off'); }
 
-// ══════════════════════════════════════════════════
-//  RENDERER — 100% Canvas geometry, no sprites
-// ══════════════════════════════════════════════════
+// RENDERER
 const PAL = {
-  bg: '#04060f',
-  floor: '#0e2030',
-  floorG: '#1a3a50',
-  steel: '#1a2a3a',
-  spike: '#ff3040',
-  spikeG: '#ff8090',
-  ghost: 'rgba(40,180,120,.45)',
-  fake: 'rgba(100,80,160,.5)',
-  exit: '#00ffcc',
-  grav: '#ff00aa',
-  player: '#e0f0ff',
-  eye: '#00ffcc',
-  pupil: '#003020',
+  bg: '#04060f', floor: '#0e2030', floorG: '#1a3a50', steel: '#1a2a3a',
+  spike: '#ff3040', spikeG: '#ff8090', ghost: 'rgba(40,180,120,.45)',
+  fake: 'rgba(100,80,160,.5)', exit: '#00ffcc', grav: '#ff00aa',
+  player: '#e0f0ff', eye: '#00ffcc', pupil: '#003020',
 };
 
 function drawTile(col, row, t){
   const x=col*CS, y=row*CS, s=CS;
-  if(t===1||t===9){
+  if(t===1){
     const grad = ctx.createLinearGradient(x,y,x,y+s);
-    grad.addColorStop(0, t===9?'#102030':PAL.floor);
-    grad.addColorStop(1, t===9?'#081520':PAL.steel);
+    grad.addColorStop(0,PAL.floor); grad.addColorStop(1,PAL.steel);
     ctx.fillStyle=grad;
     ctx.beginPath(); ctx.roundRect(x+1,y+1,s-2,s-2,2); ctx.fill();
-    ctx.strokeStyle = t===9?'#3080a0':PAL.floorG;
-    ctx.lineWidth=1;
+    ctx.strokeStyle = PAL.floorG; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(x+2,y+2); ctx.lineTo(x+s-2,y+2); ctx.stroke();
-    if(t===9){ ctx.fillStyle='rgba(0,180,255,.2)'; ctx.fillRect(x+2,y+s-4,s-4,3); }
   } else if(t===3){
     ctx.fillStyle=PAL.spike;
     const mid=x+s/2, tip=y+2, base=y+s-2, hw=s*0.4;
-    ctx.beginPath();
-    ctx.moveTo(mid,tip); ctx.lineTo(mid+hw,base); ctx.lineTo(mid-hw,base);
+    ctx.beginPath(); ctx.moveTo(mid,tip); ctx.lineTo(mid+hw,base); ctx.lineTo(mid-hw,base);
     ctx.closePath(); ctx.fill();
     ctx.strokeStyle=PAL.spikeG; ctx.lineWidth=1.5; ctx.stroke();
   } else if(t===4){
@@ -742,17 +799,14 @@ function drawTile(col, row, t){
     ctx.fillStyle='rgba(255,0,170,.25)';
     ctx.fillRect(x+1,y+1,s-2,s-2);
     ctx.strokeStyle=PAL.grav; ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(x+s/2,y+4); ctx.lineTo(x+s/2-4,y+9); ctx.lineTo(x+s/2+4,y+9); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x+s/2,y+4); ctx.lineTo(x+s/2-4,y+9); ctx.lineTo(x+s/2+4,y+9); ctx.closePath(); ctx.fill();
     ctx.moveTo(x+s/2,y+s-4); ctx.lineTo(x+s/2-4,y+s-9); ctx.lineTo(x+s/2+4,y+s-9); ctx.closePath(); ctx.fill();
-    ctx.stroke();
   } else if(t===8){
     const pulse=Math.sin(Date.now()*0.005)*0.4+0.6;
     ctx.fillStyle=`rgba(0,255,200,${pulse*0.18})`;
     ctx.fillRect(x,y,s,s);
     ctx.strokeStyle=`rgba(0,255,200,${pulse})`;
-    ctx.lineWidth=2;
-    ctx.strokeRect(x+2,y+2,s-4,s-4);
+    ctx.lineWidth=2; ctx.strokeRect(x+2,y+2,s-4,s-4);
     ctx.fillStyle=`rgba(0,255,200,${pulse})`;
     ctx.font=`bold ${s*0.5}px monospace`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -776,7 +830,6 @@ function drawPlayer(){
   if(state.dying) return;
   const inv = state.invinTimer>0 && Math.floor(state.invinTimer/4)%2===0;
   if(inv) return;
-
   const px=Math.round(p.x), py=Math.round(p.y);
   const w=PLAYER_W, h=PLAYER_H;
 
@@ -790,14 +843,11 @@ function drawPlayer(){
   ctx.translate(px+w/2, py+h/2);
   if(p.lean) ctx.rotate(p.lean*0.08);
   ctx.scale(1/p.stretch, p.stretch);
-
   const hw=w/2, hh=h/2;
   ctx.fillStyle = state.invinTimer>0?'rgba(200,240,255,.6)':PAL.player;
   ctx.beginPath(); ctx.roundRect(-hw,-hh,w,h,4); ctx.fill();
-
   ctx.strokeStyle = state.gravFlip?PAL.grav:PAL.eye;
   ctx.lineWidth=1.5; ctx.stroke();
-
   const ex=Math.cos(p.eyeAng)*3, ey=Math.sin(p.eyeAng)*2;
   const eR=w*0.28;
   ctx.fillStyle=PAL.eye;
@@ -806,7 +856,6 @@ function drawPlayer(){
   ctx.beginPath(); ctx.arc(ex+Math.cos(p.eyeAng)*eR*.4, ey+Math.sin(p.eyeAng)*eR*.4, eR*.45,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.6)';
   ctx.beginPath(); ctx.arc(ex-eR*.3, ey-eR*.3, eR*.22,0,Math.PI*2); ctx.fill();
-
   if(p.blinking>0){
     ctx.fillStyle=PAL.player;
     ctx.fillRect(-hw,-hh,w,h/2);
@@ -879,9 +928,7 @@ function render(){
   drawFlash();
 }
 
-// ══════════════════════════════════════════════════
-//  INPUT (touch + keyboard)
-// ══════════════════════════════════════════════════
+// INPUT
 const keys={left:false,right:false,jump:false,jumpJustPressed:false};
 let _jumpWasDown=false;
 
@@ -914,14 +961,11 @@ bindBtn('btn-l','left');
 bindBtn('btn-r','right');
 bindBtn('btn-jump','jump');
 
-// ══════════════════════════════════════════════════
-//  GAME LOOP
-// ══════════════════════════════════════════════════
+// GAME LOOP
 let lastTime=0;
 function loop(ts){
   requestAnimationFrame(loop);
   if(!state.running) return;
-
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
 
   if(state.flashTimer>0) state.flashTimer--;
@@ -942,9 +986,7 @@ function loop(ts){
   if(keys.left){ p.vx -= 1.8; }
   if(keys.right){ p.vx += 1.8; }
 
-  const underTile = tileAt(Math.floor((p.x+PLAYER_W/2)/CS), Math.floor((p.y+PLAYER_H+(gDir>0?1:-1))/CS));
-  const fric = underTile===9 ? FRIC_ICE : FRIC_NORM;
-  p.vx *= fric;
+  p.vx *= FRIC_NORM;
   if(Math.abs(p.vx)>MOVE_SPD) p.vx=MOVE_SPD*Math.sign(p.vx);
 
   if(keys.jumpJustPressed){
@@ -969,14 +1011,20 @@ function loop(ts){
   const ang = Math.atan2(p.vy*0.3, p.vx);
   p.eyeAng += (ang-p.eyeAng)*.15;
 
+  // Kill by spikes - any direction!
+  if(touchesSpike(p.x,p.y)) killPlayer();
   if(p.y>canvas.height+CS||p.y<-CS*2) killPlayer();
-  if(touchesKillTile(p.x,p.y)) killPlayer();
 
   checkTriggers();
   updateFallingBlocks();
 
-  const ex=touchesExit(p.x,p.y);
-  if(ex) handleExit(ex.c, ex.r);
+  // Exit check
+  const w=PLAYER_W, h=PLAYER_H;
+  const c0=Math.floor(p.x/CS), c1=Math.floor((p.x+w-1)/CS);
+  const r0=Math.floor(p.y/CS), r1=Math.floor((p.y+h-1)/CS);
+  for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++){
+    if(tileAt(c,r)===8){ handleExit(c,r); break; }
+  }
 
   render();
 }
