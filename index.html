@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#00ffcc">
 <meta name="description" content="FLUXTRAP — A masocore platformer where nothing is fair and everything kills you.">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;FLUXTRAP&quot;,&quot;short_name&quot;:&quot;FLUXTRAP&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;fullscreen&quot;,&quot;background_color&quot;:&quot;#04060f&quot;,&quot;theme_color&quot;:&quot;#00ffcc&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2304060f'/%3E%3Crect x='56' y='48' width='80' height='88' rx='10' fill='%23e0f0ff' stroke='%2300ffcc' stroke-width='4'/%3E%3Ccircle cx='96' cy='90' r='22' fill='%2300ffcc'/%3E%3C/svg%3E&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <title>FLUXTRAP</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
@@ -44,7 +44,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   flex-shrink:0
 }
 
-/* HUD elements */
+/* HUD */
 .hud-grp{display:flex;flex-direction:column;align-items:center;gap:1px}
 .hud-lbl{font-size:8px;color:#335;letter-spacing:2px;text-transform:uppercase}
 .hud-val{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:var(--c)}
@@ -58,7 +58,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 }
 #h-msg.show{opacity:1}
 
-/* ── CONTROLS ── */
+/* CONTROLS */
 .btn-grp{display:flex;gap:8px}
 .ctrl-btn{
   border-radius:8px;background:#080c18;
@@ -82,7 +82,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 #btn-jump{font-size:16px;letter-spacing:0}
 #dpad-mid{width:52px;height:52px}
 
-/* ── OVERLAY ── */
+/* OVERLAY */
 #overlay{
   position:absolute;inset:0;z-index:20;
   background:rgba(4,6,15,.92);
@@ -114,13 +114,12 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ov-btn:active,.ov-btn:hover{background:#fff}
 .ov-btn.alt{background:var(--m);color:#000}
 
-/* scan line fx */
+/* FX */
 #arena::after{
   content:'';position:absolute;inset:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);
   pointer-events:none;z-index:1
 }
-/* glitch keyframes */
 @keyframes glitch{
   0%,100%{transform:none;filter:none}
   20%{transform:translate(-2px,1px);filter:hue-rotate(90deg)}
@@ -128,7 +127,6 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   60%{transform:skewX(1deg);filter:brightness(1.4)}
   80%{transform:translate(-1px,2px);filter:saturate(2)}
 }
-.glitch{animation:glitch .18s steps(1) forwards}
 @keyframes shake{
   0%,100%{transform:translate(0,0)}
   25%{transform:translate(-4px,2px)}
@@ -136,34 +134,29 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   75%{transform:translate(-2px,4px)}
 }
 </style>
-<script>if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js");</script>
 </head>
 <body>
 <div id="root">
-  <!-- HUD -->
   <div id="hud-top">
     <div class="hud-grp" id="h-lvl"><div class="hud-lbl">ZONE</div><div class="hud-val" id="hv-lvl">01</div></div>
     <div id="h-msg"></div>
     <div class="hud-grp" id="h-deaths"><div class="hud-lbl">DEATHS</div><div class="hud-val" id="hv-deaths">0</div></div>
   </div>
 
-  <!-- CANVAS -->
   <div id="arena">
     <canvas id="c"></canvas>
-    <!-- OVERLAY -->
     <div id="overlay">
       <div id="ov-pre">WELCOME TO</div>
       <div id="ov-title">FLUXTRAP</div>
       <div id="ov-sub">NOTHING IS FAIR · EVERYTHING KILLS YOU</div>
       <div id="ov-tip">
-        &larr; &rarr; MOVE &nbsp;|&nbsp; &uarr; or A JUMP<br>
+        ← → MOVE &nbsp;|&nbsp; ↑ or A JUMP<br>
         Reach the <span style="color:var(--c)">EXIT</span> — if it lets you.
       </div>
       <button class="ov-btn" id="ov-btn">▶ START SUFFERING</button>
     </div>
   </div>
 
-  <!-- MOBILE CONTROLS -->
   <div id="ctrl-bar">
     <div class="btn-grp">
       <div class="ctrl-btn dir-btn" id="btn-l">◀</div>
@@ -178,6 +171,12 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 
 <script>
 'use strict';
+// ══════════════════════════════════════════════════
+//  FLUXTRAP — 100% ORIGINAL MASOCORE PLATFORMER
+//  No Nintendo assets — All drawn via Canvas 2D API
+// ═══════════════════��══════════════════════════════
+
+// ── AUDIO ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let actx = null;
 function initAudio(){ if(!actx) actx=new AudioCtx(); }
@@ -212,8 +211,7 @@ function sfx(type){
     } else if(type==='troll'){
       o.type='sine'; o.frequency.setValueAtTime(660,now);
       o.frequency.exponentialRampToValueAtTime(220,now+.4);
-      g.gain.setValueAtTime(.2,now); g.gain.setValueAtTime(.2,now+.35);
-      g.gain.exponentialRampToValueAtTime(.001,now+.5);
+      g.gain.setValueAtTime(.2,now); g.gain.exponentialRampToValueAtTime(.001,now+.5);
       o.start(now); o.stop(now+.5);
     } else if(type==='land'){
       o.type='square'; o.frequency.setValueAtTime(120,now);
@@ -224,75 +222,97 @@ function sfx(type){
   }catch(e){}
 }
 
+// ══════════════════════════════════════════════════
+//  TILE SYSTEM (100% original geometry)
+//  0 = air
+//  1 = solid floor
+//  2 = invisible trigger (activates on step)
+//  3 = visible spike
+//  4 = hidden spike (reveals when close)
+//  5 = fake block (disappears when stepped)
+//  6 = ghost platform (solid once, then air)
+//  7 = gravity trap (inverts gravity)
+//  8 = EXIT (trolls first time)
+//  9 = ice floor (low friction)
+// ══════════════════════════════════════════════════
 const CS = 24;
+
+// ══════════════════════════════════════════════════
+//  LEVELS (100% original designs, no Nintendo patterns)
+// ══════════════════════════════════════════════════
 const LEVELS = [
+// ZONE 01 — Tutorial del Dolor
 {
   pw:20, ph:14,
   sx:1, sy:11,
   map:[
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1,
-    1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 6, 6, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 8, 1,
-    1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,1,
+    1,0,0,1,1,0,0,0,0,1,1,1,0,0,1,1,0,0,0,1,
+    1,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2,0,0,0,1,
+    1,0,1,1,0,0,1,1,1,0,0,0,1,1,1,1,1,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,1,1,1,0,0,1,1,1,0,0,0,6,6,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,3,3,0,0,0,8,1,
+    1,1,0,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
     {id:'drop1', cx:7, cy:6, r:1.5, action:'drop_block', blockCol:7, blockRow:1},
-    {id:'inv1',  cx:15, cy:6, r:1.2, action:'gravity_flip'},
+    {id:'inv1', cx:15, cy:6, r:1.2, action:'gravity_flip'},
   ]
 },
+
+// ZONE 02 — Mentiras Sólidas
 {
   pw:22, ph:14,
   sx:1, sy:11,
   map:[
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 0, 0, 0, 1,
-    1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 0, 0, 0, 0, 0, 6, 6, 6, 0, 0, 0, 0, 5, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 1,
-    1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1,
-    1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,5,0,0,0,1,
+    1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1,
+    1,0,0,0,0,0,0,4,0,0,0,0,0,0,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,0,0,0,0,0,6,6,6,0,0,0,0,5,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,1,
+    1,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,8,1,
+    1,1,0,1,1,1,1,1,0,1,0,0,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
     {id:'sp1', cx:9, cy:10, r:1.5, action:'spike_wall', row:10, cols:[8,9,10,11]},
     {id:'gv1', cx:9, cy:10, r:1.2, action:'gravity_flip'},
   ]
 },
+
+// ZONE 03 — El Sádico
 {
   pw:24, ph:15,
   sx:1, sy:12,
   map:[
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 1, 1, 1, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 3, 0, 0, 0, 0, 6, 6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 4, 1,
-    1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-    1, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 6, 6, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 1,
-    1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,5,5,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,1,1,1,0,0,4,0,0,0,0,0,0,0,0,0,3,3,3,0,0,1,
+    1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,3,0,0,0,0,6,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,0,0,0,0,0,0,0,0,7,0,0,0,0,5,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0,4,1,
+    1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
+    1,0,3,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,
+    1,1,1,1,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,6,6,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
+    1,1,0,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
     {id:'d1', cx:12, cy:7, r:1.5, action:'drop_block', blockCol:12, blockRow:1},
@@ -300,8 +320,66 @@ const LEVELS = [
     {id:'sp2',cx:6, cy:11, r:1.5, action:'spike_wall', row:11, cols:[5,6,7]},
   ]
 },
+
+// ZONE 04 — El Laberinto Inverso
+{
+  pw:26, ph:16,
+  sx:1, sy:13,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,1,0,0,0,6,6,6,0,0,0,0,0,0,0,0,0,0,1,1,1,0,1,
+    1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,
+    1,0,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,1,
+    1,0,0,1,0,0,0,4,0,0,0,0,0,0,0,0,0,0,4,0,0,1,0,0,0,1,
+    1,0,0,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'inv2', cx:20, cy:8, r:1.5, action:'gravity_flip'},
+  ]
+},
+
+// ZONE 05 — La Cámara Final
+{
+  pw:28, ph:17,
+  sx:1, sy:14,
+  map:[
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0,0,0,1,
+    1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  ],
+  triggers:[
+    {id:'drop3', cx:13, cy:5, r:1.5, action:'drop_block', blockCol:13, blockRow:1},
+    {id:'drop4', cx:19, cy:5, r:1.5, action:'drop_block', blockCol:19, blockRow:1},
+  ]
+},
 ];
 
+// ══════════════════════════════════════════════════
+//  PHYSICS ENGINE
+// ══════════════════════════════════════════════════
 const GRAVITY = 0.55;
 const JUMP_VEL = -11.5;
 const MOVE_SPD = 3.4;
@@ -326,14 +404,10 @@ const state = {
   spikeReveal: new Set(),
   gravFlip: false,
   gravTimer: 0,
-  camX: 0, camY: 0,
   running: false,
   dying: false,
   deathTimer: 0,
-  flashColor: null,
   flashTimer: 0,
-  msgTimer: 0,
-  lastMsg: '',
   invinTimer: 0,
 };
 
@@ -342,7 +416,7 @@ const TAUNTS = [
   'LOL','ARE YOU EVEN TRYING?','PREDICTED','L RATIO',
   'STILL ALIVE?','TOUCH GRASS','JUST STOP',
   'PAIN IS INFORMATION','COPE','YOU FOOL','CLASSIC',
-  'MAYBE PLAY EASIER','WOW...','BRUH',
+  'MAYBE PLAY EASIER','WOW...','BRUH','GET GOOD','SKILL ISSUE',
 ];
 
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -408,13 +482,11 @@ function setTile(col, row, val){
 }
 function isSolid(t){ return t===1||t===5||t===6||t===9; }
 function isKill(t){ return t===3||t===4; }
-function isGravTrap(t){ return t===7; }
 
 function collideTiles(px, py, vx, vy){
   const p = state.player;
   let nx = px+vx, ny = py+vy;
   const w=PLAYER_W, h=PLAYER_H;
-
   const gk=(c,r)=>c+','+r;
 
   function checkAndReact(x, y){
@@ -470,7 +542,6 @@ function collideTiles(px, py, vx, vy){
       }
     }
   }
-
   return {nx, ny};
 }
 
@@ -522,7 +593,6 @@ function triggerGravFlip(){
   state.gravFlip = true;
   state.gravTimer = 180;
   showMsg('GRAVITY INVERTED');
-  sfx('trap');
 }
 
 function updateFallingBlocks(){
@@ -546,7 +616,6 @@ function killPlayer(){
   state.dying = true;
   state.deathTimer = 60;
   state.deaths++;
-  state.flashColor = '#ff3040';
   state.flashTimer = 8;
   sfx('die');
   showMsg(rnd(TAUNTS));
@@ -574,12 +643,12 @@ function handleExit(ec, er){
     setTile(ec, er, 3);
     sfx('troll');
     showMsg('NICE TRY — NOT THE EXIT');
-    setTimeout(()=>{ setTile(ec, er, 8); }, 1500);
+    setTimeout(()=>{ setTile(ec, er, 8); showMsg('...OK NOW IT IS'); }, 1500);
     return;
   }
   sfx('win');
   if(state.lvlIdx < LEVELS.length-1){
-    showOverlay('ZONE CLEAR',`ZONE ${state.lvlIdx+1} COMPLETE`,`Deaths: ${state.deaths}`,'▶ NEXT ZONE',()=>{
+    showOverlay('ZONE CLEARED',`ZONE ${state.lvlIdx+1} COMPLETE`,`Deaths: ${state.deaths}`,'▶ NEXT ZONE',()=>{
       loadLevel(state.lvlIdx+1);
       hideOverlay();
     });
@@ -614,6 +683,9 @@ function showOverlay(pre, title, sub, btnTxt, btnCb){
 }
 function hideOverlay(){ document.getElementById('overlay').classList.add('off'); }
 
+// ══════════════════════════════════════════════════
+//  RENDERER — 100% Canvas geometry, no sprites
+// ══════════════════════════════════════════════════
 const PAL = {
   bg: '#04060f',
   floor: '#0e2030',
@@ -628,7 +700,6 @@ const PAL = {
   player: '#e0f0ff',
   eye: '#00ffcc',
   pupil: '#003020',
-  trail: 'rgba(0,255,200,.12)',
 };
 
 function drawTile(col, row, t){
@@ -721,15 +792,11 @@ function drawPlayer(){
   ctx.scale(1/p.stretch, p.stretch);
 
   const hw=w/2, hh=h/2;
-
   ctx.fillStyle = state.invinTimer>0?'rgba(200,240,255,.6)':PAL.player;
-  ctx.beginPath();
-  ctx.roundRect(-hw,-hh,w,h,4);
-  ctx.fill();
+  ctx.beginPath(); ctx.roundRect(-hw,-hh,w,h,4); ctx.fill();
 
   ctx.strokeStyle = state.gravFlip?PAL.grav:PAL.eye;
-  ctx.lineWidth=1.5;
-  ctx.stroke();
+  ctx.lineWidth=1.5; ctx.stroke();
 
   const ex=Math.cos(p.eyeAng)*3, ey=Math.sin(p.eyeAng)*2;
   const eR=w*0.28;
@@ -744,14 +811,11 @@ function drawPlayer(){
     ctx.fillStyle=PAL.player;
     ctx.fillRect(-hw,-hh,w,h/2);
   }
-
   ctx.restore();
 
   if(state.gravFlip){
     ctx.strokeStyle='rgba(255,0,170,.5)'; ctx.lineWidth=1;
-    ctx.setLineDash([2,2]);
-    ctx.strokeRect(px-2,py-2,w+4,h+4);
-    ctx.setLineDash([]);
+    ctx.setLineDash([2,2]); ctx.strokeRect(px-2,py-2,w+4,h+4); ctx.setLineDash([]);
   }
 }
 
@@ -804,19 +868,20 @@ function drawFlash(){
 function render(){
   drawBackground();
   drawGravFlipFX();
-
   const lvl=state.lvl;
   for(let r=0;r<lvl.ph;r++) for(let c=0;c<lvl.pw;c++){
     const t=tileAt(c,r);
     if(t!==0) drawTile(c,r,t);
   }
-
   drawFallingBlocks();
   drawPlayer();
   drawDeathAnim();
   drawFlash();
 }
 
+// ══════════════════════════════════════════════════
+//  INPUT (touch + keyboard)
+// ══════════════════════════════════════════════════
 const keys={left:false,right:false,jump:false,jumpJustPressed:false};
 let _jumpWasDown=false;
 
@@ -849,6 +914,9 @@ bindBtn('btn-l','left');
 bindBtn('btn-r','right');
 bindBtn('btn-jump','jump');
 
+// ══════════════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════════════
 let lastTime=0;
 function loop(ts){
   requestAnimationFrame(loop);
@@ -867,7 +935,6 @@ function loop(ts){
   }
 
   const p=state.player;
-
   const gDir = state.gravFlip ? -1 : 1;
   p.vy += GRAVITY * gDir;
   if(Math.abs(p.vy)>MAX_FALL) p.vy=MAX_FALL*Math.sign(p.vy);
@@ -903,11 +970,9 @@ function loop(ts){
   p.eyeAng += (ang-p.eyeAng)*.15;
 
   if(p.y>canvas.height+CS||p.y<-CS*2) killPlayer();
-
   if(touchesKillTile(p.x,p.y)) killPlayer();
 
   checkTriggers();
-
   updateFallingBlocks();
 
   const ex=touchesExit(p.x,p.y);
@@ -924,12 +989,8 @@ function startGame(){
   lastTime=performance.now();
 }
 
-document.getElementById('ov-btn').addEventListener('click',()=>{
-  initAudio(); startGame();
-},{once:true});
-document.getElementById('ov-btn').addEventListener('touchstart',e=>{
-  e.preventDefault(); initAudio(); startGame();
-},{once:true,passive:false});
+document.getElementById('ov-btn').addEventListener('click',()=>{ initAudio(); startGame(); },{once:true});
+document.getElementById('ov-btn').addEventListener('touchstart',e=>{ e.preventDefault(); initAudio(); startGame(); },{once:true,passive:false});
 
 window.addEventListener('resize',()=>{ if(state.running) resizeCanvas(); });
 
