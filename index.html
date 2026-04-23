@@ -426,7 +426,7 @@ const LEVELS = [
     1,0,0,0,0,0,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
@@ -654,6 +654,10 @@ function execTrigger(tr){
     state.fallingBlocks.push({c:tr.blockCol, fy:0, speed:2, landed:false});
   } else if(tr.action==='spike_wall'){
     for(const c of tr.cols) setTile(c, tr.row, 3);
+  } else if(tr.action==='reveal_spikes'){
+    for(let r=0;r<state.lvl.ph;r++) for(let c=0;c<state.lvl.pw;c++){
+      if(tileAt(c,r)===4) setTile(c,r,3);
+    }
   }
 }
 
@@ -691,7 +695,7 @@ function handleExit(ec, er){
     });
   } else {
     localStorage.setItem('ft_hi', state.deaths);
-    showOverlay('YOU SURVIVED',`Total deaths: ${state.deaths}`,'ALL ZONES CLEARED','â†º PLAY AGAIN',()=>{
+    showOverlay('YOU SURVIVED',`Total deaths: ${state.deaths}`,'ALL ZONES CLEARED','PLAY AGAIN',()=>{
       state.deaths=0;
       document.getElementById('hv-deaths').textContent='0';
       loadLevel(0);
