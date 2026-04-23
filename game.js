@@ -605,10 +605,6 @@ class Game {
     this.keys = { left: false, right: false, jump: false, jumpJustPressed: false };
     this._jumpWasDown = false;
     this._lastTS = 0;
-    this._physAccum = 0;
-    this._accumFPS = 0;
-    this._fpsCount = 0;
-    this.currentFPS = 60;
     this._bindInput();
     this._bindButtons();
     this._bindUI();
@@ -633,7 +629,6 @@ class Game {
     this.state.running = true;
     this.state.paused = false;
     this._lastTS = performance.now();
-    this._physAccum = 0;
   }
 
   loadLevel(idx) {
@@ -904,24 +899,8 @@ class Game {
     if (this._lastTS === 0) this._lastTS = ts;
     const rawDt = Math.min((ts - this._lastTS) * 0.001, MAX_DT);
     this._lastTS = ts;
-    this._accumFPS += rawDt;
-    this._fpsCount++;
-    if (this._accumFPS >= 1) {
-      this.currentFPS = this._fpsCount;
-      this._fpsCount = 0;
-      this._accumFPS -= 1;
-    }
-    this._physAccum += rawDt;
-    let steps = 0;
-    while (this._physAccum >= TARGET_DT && steps < 5) {
-      this._physicsStep(TARGET_DT);
-      this._physAccum -= TARGET_DT;
-      steps++;
-    }
-    if (this._physAccum > 0 && steps < 5) {
-      this._physicsStep(this._physAccum);
-      this._physAccum = 0;
-    }
+
+    this._physicsStep(TARGET_DT);
     this.render();
   }
 
@@ -1239,7 +1218,6 @@ const p = s.player;
       this._showOverlay('PAUSED', '', '', 'RESUME', () => {
         this.state.paused = false;
         this._lastTS = performance.now();
-        this._physAccum = 0;
         this._hideOverlay();
       });
     }
