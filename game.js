@@ -947,6 +947,11 @@ class Game {
     if (this.keys.right) p.vx += MOVE_ACC * dt;
     if (!this.keys.left && !this.keys.right) {
       p.vx = 0;
+      p.lean *= 0.8;
+      p.eyeAng *= 0.8;
+    }
+    if (p.vx === 0 && p.vy === 0) {
+      p.stretch = 1 + (p.stretch - 1) * 0.9;
     }
     if (Math.abs(p.vx) > MOVE_SPD) p.vx = MOVE_SPD * Math.sign(p.vx);
     if (this.keys.jumpJustPressed) {
