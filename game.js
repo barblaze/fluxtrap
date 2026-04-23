@@ -959,20 +959,6 @@ const p = s.player;
       this.keys.jump = false;
     }
 
-    const dx = p.vx * dt, dy = p.vy * dt;
-    const rx = this._sweepX(p.x, p.y, dx);
-    if (rx.hitWall) p.vx = 0;
-    p.x = rx.nx;
-    const ry = this._sweepY(p.x, p.y, dy);
-    if (ry.hitFloor) { p.onGround = true; p.vy = 0; }
-    if (ry.hitCeiling) { p.vy = 0; }
-    p.y = ry.ny;
-
-    this._checkSpecialUnderfoot(p.x, p.y, p.vy);
-    if (this.touchesSpike(p.x, p.y)) this.killPlayer();
-    if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
-    this.checkTriggers();
-    this._updateFallingBlocks(dt);
     p.trailPts.push({ x: p.x, y: p.y });
     if (p.trailPts.length > 6) p.trailPts.shift();
     const wasGround = p.onGround;
