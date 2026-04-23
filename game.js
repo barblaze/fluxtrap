@@ -6,12 +6,11 @@ const PLAYER_H = 20;
 const CS = 20;  // tamaño del tile en píxeles
 const DEBUG_SENSORS = false;
 
-const GRAVITY    = 1500;
-const JUMP_VEL  = -520;
-const MOVE_ACC  = 3200;
-const MOVE_SPD  = 180;
-const FRIC     = 0.92;
-const MAX_FALL = 1080;
+const GRAVITY    = 900;
+const JUMP_VEL  = -440;
+const MOVE_ACC  = 1800;
+const MOVE_SPD  = 150;
+const MAX_FALL = 600;
 const DEATH_DUR = 1.0;
 const INVIN_DUR = 1.333;
 const GRAV_DUR = 3.0;
@@ -19,6 +18,7 @@ const FLASH_DUR = 0.133;
 const MSG_DUR  = 2.2;
 const TARGET_DT = 1 / 60;
 const MAX_DT    = 1 / 20;
+const FRIC = 0.85;
 
 const PAL = {
   bg: '#04060f',
