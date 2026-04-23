@@ -943,10 +943,11 @@ class Game {
     if (this.keys.left) p.vx -= MOVE_ACC * dt;
     if (this.keys.right) p.vx += MOVE_ACC * dt;
     if (!this.keys.left && !this.keys.right) {
-      p.vx *= FRIC;
+      if (p.vx > 0) p.vx = Math.max(0, p.vx - 800 * dt);
+      else if (p.vx < 0) p.vx = Math.min(0, p.vx + 800 * dt);
     }
     if (Math.abs(p.vx) > MOVE_SPD) p.vx = MOVE_SPD * Math.sign(p.vx);
-    if (Math.abs(p.vx) < 1) p.vx = 0;
+    if (Math.abs(p.vx) < 2) p.vx = 0;
     if (this.keys.jumpJustPressed) {
       if (p.onGround || s.gravFlip) {
         p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
@@ -1267,7 +1268,9 @@ class Game {
   _bindBtn(id, keyName) {
     const el = document.getElementById(id);
     if (!el) return;
-    const doDown = () => {
+    el.oncontextmenu = (e) => e.preventDefault();
+    const doDown = (e) => {
+      if (e) e.preventDefault();
       this.keys[keyName] = true;
       if (keyName === 'jump' && !this._jumpWasDown) {
         this.keys.jumpJustPressed = true;
@@ -1275,14 +1278,14 @@ class Game {
       }
       el.classList.add('pressed');
     };
-    const doUp = () => {
+    const doUp = (e) => {
+      if (e) e.preventDefault();
       this.keys[keyName] = false;
       if (keyName === 'jump') this._jumpWasDown = false;
       el.classList.remove('pressed');
     };
-    el.addEventListener('touchstart', doDown);
-    el.addEventListener('touchend', doUp);
-    el.addEventListener('touchcancel', doUp);
+    el.addEventListener('touchstart', doDown, { passive: false });
+    el.addEventListener('touchend', doUp, { passive: false });
     el.addEventListener('mousedown', doDown);
     el.addEventListener('mouseup', doUp);
     el.addEventListener('mouseleave', doUp);
