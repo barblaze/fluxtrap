@@ -679,6 +679,10 @@ class Game {
   resizeCanvas() {
     const arena = document.getElementById('arena');
     const aw = arena.clientWidth, ah = arena.clientHeight;
+    if (aw === 0 || ah === 0) {
+      setTimeout(() => this.resizeCanvas(), 100);
+      return;
+    }
     const lvl = this.levels[this.state.lvlIdx];
     if (!lvl) return;
     const gw = lvl.pw * CS, gh = lvl.ph * CS;
