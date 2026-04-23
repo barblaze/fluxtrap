@@ -6,11 +6,11 @@ const PLAYER_H = 20;
 const CS = 20;  // tamaño del tile en píxeles
 const DEBUG_SENSORS = false;
 
-const GRAVITY    = 1980;
-const JUMP_VEL  = -690;
-const MOVE_ACC  = 6480;
-const MOVE_SPD  = 204;
-const FRIC     = 0.0045;
+const GRAVITY    = 1500;
+const JUMP_VEL  = -520;
+const MOVE_ACC  = 3200;
+const MOVE_SPD  = 180;
+const FRIC     = 0.92;
 const MAX_FALL = 1080;
 const DEATH_DUR = 1.0;
 const INVIN_DUR = 1.333;
@@ -942,8 +942,11 @@ class Game {
     if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
     if (this.keys.left) p.vx -= MOVE_ACC * dt;
     if (this.keys.right) p.vx += MOVE_ACC * dt;
-    p.vx *= Math.pow(FRIC, dt);
+    if (!this.keys.left && !this.keys.right) {
+      p.vx *= FRIC;
+    }
     if (Math.abs(p.vx) > MOVE_SPD) p.vx = MOVE_SPD * Math.sign(p.vx);
+    if (Math.abs(p.vx) < 1) p.vx = 0;
     if (this.keys.jumpJustPressed) {
       if (p.onGround || s.gravFlip) {
         p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
@@ -1264,8 +1267,10 @@ class Game {
   _bindBtn(id, keyName) {
     const el = document.getElementById(id);
     if (!el) return;
-    const down = e => {
+    const handleDown = (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      if (this.keys[keyName]) return;
       this.keys[keyName] = true;
       if (keyName === 'jump' && !this._jumpWasDown) {
         this.keys.jumpJustPressed = true;
@@ -1273,17 +1278,19 @@ class Game {
       }
       el.classList.add('pressed');
     };
-    const up = e => {
+    const handleUp = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       this.keys[keyName] = false;
       if (keyName === 'jump') this._jumpWasDown = false;
       el.classList.remove('pressed');
     };
-    el.addEventListener('touchstart', down, { passive: false });
-    el.addEventListener('touchend', up, { passive: false });
-    el.addEventListener('mousedown', down);
-    el.addEventListener('mouseup', up);
-    el.addEventListener('mouseleave', up);
+    el.addEventListener('touchstart', handleDown, { passive: false });
+    el.addEventListener('touchend', handleUp, { passive: false });
+    el.addEventListener('touchcancel', handleUp, { passive: false });
+    el.addEventListener('mousedown', handleDown);
+    el.addEventListener('mouseup', handleUp);
+    el.addEventListener('mouseleave', handleUp);
   }
 
   _bindUI() {
