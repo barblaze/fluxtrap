@@ -969,8 +969,8 @@ class Game {
       p.stretch = 1 + Math.min(dy * 0.08, 0.4);
     }
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
-    p.stretch += (1 - p.stretch) * Math.min(dt * 15, 1);
-    p.lean += (p.vx - p.lean) * Math.min(dt * 12, 1);
+    p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
+    p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
     if (Math.random() < dt * 0.18) p.blinking = 0.133;
     if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
     p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
