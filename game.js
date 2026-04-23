@@ -666,6 +666,11 @@ class Game {
       vx: 0,
       vy: 0,
       onGround: false,
+      eyeAng: 0,
+      stretch: 1,
+      lean: 0,
+      blinking: 0,
+      trailPts: [],
     };
     this.resizeCanvas();
     document.getElementById('hv-lvl').textContent = String(idx + 1).padStart(2, '0');
@@ -855,6 +860,10 @@ class Game {
     p.vx = 0;
     p.vy = 0;
     p.onGround = false;
+    p.eyeAng = 0;
+    p.stretch = 1;
+    p.lean = 0;
+    p.trailPts = [];
     this.state.dying = false;
     this.state.invinTimer = INVIN_DUR;
     this.state.gravFlip = false;
@@ -933,14 +942,12 @@ class Game {
 const p = s.player;
     const gDir = s.gravFlip ? -1 : 1;
     p.vy += GRAVITY * gDir * dt;
+    if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
 
     if (this.keys.left) p.vx -= MOVE_ACC * dt;
     if (this.keys.right) p.vx += MOVE_ACC * dt;
     if (!this.keys.left && !this.keys.right) {
       p.vx = 0;
-      p.eyeAng = 0;
-      p.lean = 0;
-      p.stretch = 1;
     }
 
     if (this.keys.jump) {
@@ -951,8 +958,23 @@ const p = s.player;
       }
       this.keys.jump = false;
     }
-    p.trailPts = [];
-    p.trailPts.push();
+
+    const dx = p.vx * dt, dy = p.vy * dt;
+    const rx = this._sweepX(p.x, p.y, dx);
+    if (rx.hitWall) p.vx = 0;
+    p.x = rx.nx;
+    const ry = this._sweepY(p.x, p.y, dy);
+    if (ry.hitFloor) { p.onGround = true; p.vy = 0; }
+    if (ry.hitCeiling) { p.vy = 0; }
+    p.y = ry.ny;
+
+    this._checkSpecialUnderfoot(p.x, p.y, p.vy);
+    if (this.touchesSpike(p.x, p.y)) this.killPlayer();
+    if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
+    this.checkTriggers();
+    this._updateFallingBlocks(dt);
+    p.trailPts.push({ x: p.x, y: p.y });
+    if (p.trailPts.length > 6) p.trailPts.shift();
     const wasGround = p.onGround;
     p.onGround = false;
     const dx = p.vx * dt, dy = p.vy * dt;
@@ -969,6 +991,10 @@ const p = s.player;
     }
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
     p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
+    p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
+    if (Math.random() < dt * 0.1) p.blinking = 0.1;
+    if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
+    p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
     p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
     if (Math.random() < dt * 0.1) p.blinking = 0.1;
     if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
@@ -1132,14 +1158,41 @@ const p = s.player;
     const inv = this.state.invinTimer > 0 && Math.floor(this.state.invinTimer / (4 / 60)) % 2 === 0;
     const px = Math.round(p.x), py = Math.round(p.y), w = PLAYER_W, h = PLAYER_H;
 
+    for (let i = 0; i < p.trailPts.length; i++) {
+      const tp = p.trailPts[i];
+      ctx.fillStyle = `rgba(0,255,200,${(i / p.trailPts.length) * 0.25})`;
+      ctx.fillRect(tp.x + 3, tp.y + 3, w - 6, h - 6);
+    }
+    ctx.save();
+    ctx.translate(px + w / 2, py + h / 2);
+    if (p.lean) ctx.rotate((p.lean / MOVE_SPD) * 0.08);
+    ctx.scale(1 / p.stretch, p.stretch);
+    const hw = w / 2, hh = h / 2;
     ctx.fillStyle = inv ? 'rgba(200,240,255,.6)' : PAL.player;
     ctx.beginPath();
-    ctx.roundRect(px, py, w, h, 4);
+    ctx.roundRect(-hw, -hh, w, h, 4);
     ctx.fill();
     ctx.strokeStyle = this.state.gravFlip ? PAL.grav : PAL.eye;
     ctx.lineWidth = 1.5;
     ctx.stroke();
-
+    const ex = Math.cos(p.eyeAng) * 3, ey = Math.sin(p.eyeAng) * 2, eR = w * 0.28;
+    ctx.fillStyle = PAL.eye;
+    ctx.beginPath();
+    ctx.arc(ex, ey, eR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = PAL.pupil;
+    ctx.beginPath();
+    ctx.arc(ex + Math.cos(p.eyeAng) * eR * 0.4, ey + Math.sin(p.eyeAng) * eR * 0.4, eR * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.6)';
+    ctx.beginPath();
+    ctx.arc(ex - eR * 0.3, ey - eR * 0.3, eR * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    if (p.blinking > 0) {
+      ctx.fillStyle = PAL.player;
+      ctx.fillRect(-hw, -hh, w, h / 2);
+    }
+    ctx.restore();
     if (this.state.gravFlip) {
       ctx.strokeStyle = 'rgba(255,0,170,.5)';
       ctx.lineWidth = 1;
