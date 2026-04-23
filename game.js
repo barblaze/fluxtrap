@@ -666,9 +666,6 @@ class Game {
       vx: 0,
       vy: 0,
       onGround: false,
-      eyeAng: 0,
-      stretch: 1,
-      lean: 0,
       blinking: 0,
       trailPts: [],
     };
@@ -969,14 +966,10 @@ class Game {
     p.y = ry.ny;
     if (!wasGround && p.onGround && dy > 0) {
       sfx('land');
-      p.stretch = 1 + Math.min(dy * 0.08, 0.4);
     }
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
-    p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
-    p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
-    if (Math.random() < dt * 0.18) p.blinking = 0.133;
+    if (Math.random() < dt * 0.1) p.blinking = 0.1;
     if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
-    p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
     if (this.touchesSpike(p.x, p.y)) this.killPlayer();
     if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
     this.checkTriggers();
@@ -1140,36 +1133,17 @@ class Game {
       ctx.fillStyle = `rgba(0,255,200,${(i / p.trailPts.length) * 0.25})`;
       ctx.fillRect(tp.x + 3, tp.y + 3, w - 6, h - 6);
     }
-    ctx.save();
-    ctx.translate(px + w / 2, py + h / 2);
-    if (p.lean) ctx.rotate((p.lean / MOVE_SPD) * 0.08);
-    ctx.scale(1 / p.stretch, p.stretch);
-    const hw = w / 2, hh = h / 2;
     ctx.fillStyle = inv ? 'rgba(200,240,255,.6)' : PAL.player;
     ctx.beginPath();
-    ctx.roundRect(-hw, -hh, w, h, 4);
+    ctx.roundRect(px, py, w, h, 4);
     ctx.fill();
     ctx.strokeStyle = this.state.gravFlip ? PAL.grav : PAL.eye;
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    const ex = Math.cos(p.eyeAng) * 3, ey = Math.sin(p.eyeAng) * 2, eR = w * 0.28;
-    ctx.fillStyle = PAL.eye;
-    ctx.beginPath();
-    ctx.arc(ex, ey, eR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = PAL.pupil;
-    ctx.beginPath();
-    ctx.arc(ex + Math.cos(p.eyeAng) * eR * 0.4, ey + Math.sin(p.eyeAng) * eR * 0.4, eR * 0.45, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.6)';
-    ctx.beginPath();
-    ctx.arc(ex - eR * 0.3, ey - eR * 0.3, eR * 0.22, 0, Math.PI * 2);
-    ctx.fill();
     if (p.blinking > 0) {
       ctx.fillStyle = PAL.player;
-      ctx.fillRect(-hw, -hh, w, h / 2);
+      ctx.fillRect(px, py, w, h / 2);
     }
-    ctx.restore();
     if (this.state.gravFlip) {
       ctx.strokeStyle = 'rgba(255,0,170,.5)';
       ctx.lineWidth = 1;
@@ -1267,10 +1241,7 @@ class Game {
   _bindBtn(id, keyName) {
     const el = document.getElementById(id);
     if (!el) return;
-    const handleDown = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (this.keys[keyName]) return;
+    const doDown = () => {
       this.keys[keyName] = true;
       if (keyName === 'jump' && !this._jumpWasDown) {
         this.keys.jumpJustPressed = true;
@@ -1278,19 +1249,17 @@ class Game {
       }
       el.classList.add('pressed');
     };
-    const handleUp = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    const doUp = () => {
       this.keys[keyName] = false;
       if (keyName === 'jump') this._jumpWasDown = false;
       el.classList.remove('pressed');
     };
-    el.addEventListener('touchstart', handleDown, { passive: false });
-    el.addEventListener('touchend', handleUp, { passive: false });
-    el.addEventListener('touchcancel', handleUp, { passive: false });
-    el.addEventListener('mousedown', handleDown);
-    el.addEventListener('mouseup', handleUp);
-    el.addEventListener('mouseleave', handleUp);
+    el.addEventListener('touchstart', doDown);
+    el.addEventListener('touchend', doUp);
+    el.addEventListener('touchcancel', doUp);
+    el.addEventListener('mousedown', doDown);
+    el.addEventListener('mouseup', doUp);
+    el.addEventListener('mouseleave', doUp);
   }
 
   _bindUI() {
