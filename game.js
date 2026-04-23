@@ -926,12 +926,10 @@ const p = s.player;
     else if (this.keys.right) p.vx = MOVE_SPD;
     else p.vx = 0;
 
-    if (this.keys.jump) {
-      if (p.onGround || s.gravFlip) {
-        p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
-        p.onGround = false;
-        sfx('jump');
-      }
+    if (this.keys.jump && (p.onGround || s.gravFlip)) {
+      p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
+      p.onGround = false;
+      sfx('jump');
       this.keys.jump = false;
     }
 
