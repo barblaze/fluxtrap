@@ -943,15 +943,18 @@ class Game {
     const gDir = s.gravFlip ? -1 : 1;
     p.vy += GRAVITY * gDir * dt;
     if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
+
+    if (p.vy > 0 && p.y > 0) {
+      p.vy = Math.min(p.vy, MAX_FALL * 0.5);
+    }
+
     if (this.keys.left) p.vx -= MOVE_ACC * dt;
     if (this.keys.right) p.vx += MOVE_ACC * dt;
     if (!this.keys.left && !this.keys.right) {
       p.vx = 0;
       p.lean *= 0.8;
       p.eyeAng *= 0.8;
-    }
-    if (p.vx === 0 && p.vy === 0) {
-      p.stretch = 1 + (p.stretch - 1) * 0.9;
+      p.stretch = 1;
     }
     if (Math.abs(p.vx) > MOVE_SPD) p.vx = MOVE_SPD * Math.sign(p.vx);
     if (this.keys.jumpJustPressed) {
@@ -1275,19 +1278,33 @@ class Game {
     const el = document.getElementById(id);
     if (!el) return;
     el.oncontextmenu = (e) => e.preventDefault();
+    el.ontouchcancel = (e) => {
+      this.keys[keyName] = false;
+      this.keys.jumpJustPressed = false;
+      el.classList.remove('pressed');
+    };
     const doDown = (e) => {
-      if (e) e.preventDefault();
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.keys[keyName]) return;
       this.keys[keyName] = true;
-      if (keyName === 'jump') this.keys.jumpJustPressed = true;
+      if (keyName === 'jump' && !this.keys.jumpJustPressed) {
+        this.keys.jumpJustPressed = true;
+      }
       el.classList.add('pressed');
     };
     const doUp = (e) => {
-      if (e) e.preventDefault();
+      e.preventDefault();
+      e.stopPropagation();
       this.keys[keyName] = false;
+      if (keyName === 'jump') {
+        this.keys.jumpJustPressed = false;
+      }
       el.classList.remove('pressed');
     };
     el.addEventListener('touchstart', doDown, { passive: false });
     el.addEventListener('touchend', doUp, { passive: false });
+    el.addEventListener('touchcancel', doUp, { passive: false });
     el.addEventListener('mousedown', doDown);
     el.addEventListener('mouseup', doUp);
     el.addEventListener('mouseleave', doUp);
