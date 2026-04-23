@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#00ffcc">
-<meta name="description" content="FLUXTRAP — A masocore platformer where nothing is fair and everything kills you.">
+<meta name="description" content="FLUXTRAP â€” A masocore platformer where nothing is fair and everything kills you.">
 <title>FLUXTRAP</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
@@ -69,14 +69,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   box-shadow:0 0 8px var(--c)
 }
 .dir-btn{width:52px;height:52px;font-size:18px}
-.act-btn{width:60px;height:60px;font-size:22px;border-radius:50%;
-  background:#100818;border-color:#2a1a3a;color:#664}
-.act-btn:active,.act-btn.pressed{
-  background:#1a0828;border-color:var(--m);color:var(--m);
-  box-shadow:0 0 10px var(--m)
-}
-#btn-jump{font-size:16px;letter-spacing:0}
-#dpad-mid{width:52px;height:52px}
+#btn-pause{font-size:14px;width:44px;height:44px}
 
 #overlay{
   position:absolute;inset:0;z-index:20;
@@ -107,6 +100,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   transition:background .1s;margin-top:4px
 }
 .ov-btn:active,.ov-btn:hover{background:#fff}
+.ov-btn.alt{background:var(--m);color:#000}
 
 #arena::after{
   content:'';position:absolute;inset:0;
@@ -127,6 +121,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
     <div class="hud-grp" id="h-lvl"><div class="hud-lbl">ZONE</div><div class="hud-val" id="hv-lvl">01</div></div>
     <div id="h-msg"></div>
     <div class="hud-grp" id="h-deaths"><div class="hud-lbl">DEATHS</div><div class="hud-val" id="hv-deaths">0</div></div>
+    <button class="ctrl-btn" id="btn-pause">II</button>
   </div>
 
   <div id="arena">
@@ -134,23 +129,23 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
     <div id="overlay">
       <div id="ov-pre">WELCOME TO</div>
       <div id="ov-title">FLUXTRAP</div>
-      <div id="ov-sub">NOTHING IS FAIR · EVERYTHING KILLS YOU</div>
+      <div id="ov-sub">NOTHING IS FAIR Â· EVERYTHING KILLS YOU</div>
       <div id="ov-tip">
-        ← → MOVE &nbsp;|&nbsp; ↑ or A JUMP<br>
-        Reach the <span style="color:var(--c)">EXIT</span> — if it lets you.
+        â† â†’ MOVE &nbsp;|&nbsp; â†‘ or A JUMP<br>
+        Reach the <span style="color:var(--c)">EXIT</span> â€” if it lets you.
       </div>
-      <button class="ov-btn" id="ov-btn">▶ START SUFFERING</button>
+      <button class="ov-btn" id="ov-btn">â–¶ START SUFFERING</button>
     </div>
   </div>
 
   <div id="ctrl-bar">
     <div class="btn-grp">
-      <div class="ctrl-btn dir-btn" id="btn-l">◀</div>
+      <div class="ctrl-btn dir-btn" id="btn-l">â—€</div>
       <div id="dpad-mid"></div>
-      <div class="ctrl-btn dir-btn" id="btn-r">▶</div>
+      <div class="ctrl-btn dir-btn" id="btn-r">â–¶</div>
     </div>
     <div class="btn-grp">
-      <div class="ctrl-btn act-btn" id="btn-jump">JUMP<br>▲</div>
+      <div class="ctrl-btn act-btn" id="btn-jump">JUMP<br>â–²</div>
     </div>
   </div>
 </div>
@@ -212,11 +207,9 @@ const MAX_FALL = 18;
 const PLAYER_W = 18;
 const PLAYER_H = 20;
 
-// ══════════════════════════════════════════════════
-//  10 ZONES WITH UNIQUE TROLLS
-// ══════════════════════════════════════════════════
+// 10 ZONES - All spikes hidden (4), can kill from any direction
 const LEVELS = [
-// ZONE 01 — Tutorial del Dolor
+// ZONE 01 â€” Tutorial del Dolor
 {
   pw:20, ph:14, sx:1, sy:11,
   map:[
@@ -224,13 +217,13 @@ const LEVELS = [
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,
     1,0,0,1,1,0,0,0,0,1,1,1,0,0,1,1,0,0,0,1,
-    1,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2,0,0,0,1,
+    1,0,0,0,0,0,0,4,0,0,0,0,0,0,0,4,0,0,0,1,
     1,0,1,1,0,0,1,1,1,0,0,0,1,1,1,1,1,0,0,1,
     1,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,
     1,0,0,0,1,1,1,0,0,1,1,1,0,0,0,6,6,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,3,3,0,0,0,8,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,4,4,0,0,0,8,1,
     1,1,0,0,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -241,17 +234,17 @@ const LEVELS = [
   ]
 },
 
-// ZONE 02 — Mentiras Sólidas
+// ZONE 02 â€” Mentiras SÃ³lidas
 {
   pw:22, ph:14, sx:1, sy:11,
   map:[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,5,0,0,0,1,
-    1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,1,
+    1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,1,
     1,0,0,0,0,0,0,4,0,0,0,0,0,0,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,0,0,0,0,0,6,6,6,0,0,0,0,5,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,1,
     1,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1,1,0,0,0,0,1,
@@ -266,21 +259,21 @@ const LEVELS = [
   ]
 },
 
-// ZONE 03 — El Sádico
+// ZONE 03 â€” El SÃ¡dico
 {
   pw:24, ph:15, sx:1, sy:12,
   map:[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,5,5,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,1,1,1,0,0,4,0,0,0,0,0,0,0,0,0,3,3,3,0,0,1,
+    1,0,0,1,1,1,0,0,4,0,0,0,0,0,0,0,0,0,4,4,4,0,0,1,
     1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,3,0,0,0,0,6,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,4,0,0,0,0,6,6,6,6,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,0,0,0,0,0,0,0,0,7,0,0,0,0,5,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0,4,1,
     1,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,
-    1,0,3,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,
+    1,0,4,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,1,
     1,1,1,1,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,6,6,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
     1,1,0,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -292,7 +285,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 04 — El Hueco Infinito
+// ZONE 04 â€” El Hueco Infinito
 {
   pw:20, ph:16, sx:1, sy:13,
   map:[
@@ -318,7 +311,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 05 — La Cámara de los Secretos
+// ZONE 05 â€” La CÃ¡mara de los Secretos
 {
   pw:24, ph:14, sx:1, sy:10,
   map:[
@@ -326,8 +319,8 @@ const LEVELS = [
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
@@ -339,22 +332,21 @@ const LEVELS = [
   ],
   triggers:[
     {id:'inv3', cx:12, cy:5, r:1.5, action:'gravity_flip'},
-    {id:'sp3', cx:5, cy:2, r:1.2, action:'reveal_spikes'},
   ]
 },
 
-// ZONE 06 — El Piso es Lava
+// ZONE 06 â€” El Piso es Lava
 {
   pw:22, ph:13, sx:1, sy:10,
   map:[
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,1,
+    1,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,4,3,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,4,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -366,7 +358,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 07 — Laberinto Vertical
+// ZONE 07 â€” Laberinto Vertical
 {
   pw:18, ph:18, sx:1, sy:15,
   map:[
@@ -378,9 +370,9 @@ const LEVELS = [
     1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,3,4,3,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,4,4,4,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,1,1,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,
@@ -390,11 +382,10 @@ const LEVELS = [
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
   ],
   triggers:[
-    {id:'sp4', cx:9, cy:10, r:1.5, action:'reveal_spikes'},
   ]
 },
 
-// ZONE 08 — Techo Caído
+// ZONE 08 â€” Techo CaÃ­do
 {
   pw:20, ph:12, sx:1, sy:9,
   map:[
@@ -404,7 +395,7 @@ const LEVELS = [
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,3,3,0,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,4,4,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -413,12 +404,10 @@ const LEVELS = [
   ],
   triggers:[
     {id:'inv4', cx:10, cy:5, r:1.2, action:'gravity_flip'},
-    {id:'reveal1', cx:5, cy:5, r:1.0, action:'reveal_spikes'},
-    {id:'reveal2', cx:15, cy:5, r:1.0, action:'reveal_spikes'},
   ]
 },
 
-// ZONE 09 — El Final del Camino
+// ZONE 09 â€” El Final del Camino
 {
   pw:26, ph:14, sx:1, sy:11,
   map:[
@@ -431,7 +420,7 @@ const LEVELS = [
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -439,11 +428,10 @@ const LEVELS = [
   ],
   triggers:[
     {id:'sp5', cx:13, cy:8, r:1.5, action:'reveal_spikes'},
-    {id:'inv5', cx:8, cy:2, r:1.2, action:'gravity_flip'},
   ]
 },
 
-// ZONE 10 — Você Morre Aqui
+// ZONE 10 â€” VocÃª Morre Aqui
 {
   pw:28, ph:15, sx:1, sy:12,
   map:[
@@ -458,7 +446,7 @@ const LEVELS = [
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
     1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
-    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,3,0,0,0,0,0,0,0,0,1,
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,4,4,0,0,0,0,0,0,0,0,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -466,40 +454,21 @@ const LEVELS = [
   triggers:[
     {id:'inv6', cx:14, cy:7, r:1.5, action:'gravity_flip'},
     {id:'drop5', cx:14, cy:3, r:1.0, action:'drop_block', blockCol:14, blockRow:1},
-    {id:'reveal6', cx:6, cy:9, r:1.2, action:'reveal_spikes'},
   ]
 },
 ];
 
 const state = {
-  lvlIdx: 0,
-  deaths: 0,
+  lvlIdx: 0, deaths: 0,
   hi: +(localStorage.getItem('ft_hi')||0),
-  player: null,
-  map: null,
-  lvl: null,
-  triggers: null,
-  firedTriggers: new Set(),
-  ghostTiles: new Map(),
-  spikeReveal: new Set(),
-  exitTrolled: false,
-  fallingBlocks: [],
-  gravFlip: false,
-  gravTimer: 0,
-  running: false,
-  dying: false,
-  deathTimer: 0,
-  flashTimer: 0,
-  invinTimer: 0,
+  player: null, map: null, lvl: null, triggers: null,
+  firedTriggers: new Set(), ghostTiles: new Map(), spikeReveal: new Set(),
+  exitTrolled: false, fallingBlocks: [], gravFlip: false,
+  gravTimer: 0, running: false, paused: false,
+  dying: false, deathTimer: 0, flashTimer: 0, invinTimer: 0,
 };
 
-const TAUNTS = [
-  'NICE TRY','SKILL ISSUE','PATHETIC','THAT WAS OBVIOUS',
-  'LOL','ARE YOU EVEN TRYING?','PREDICTED','L RATIO',
-  'STILL ALIVE?','TOUCH GRASS','JUST STOP',
-  'PAIN IS INFORMATION','COPE','YOU FOOL','CLASSIC',
-  'MAYBE PLAY EASIER','WOW...','BRUH','GET GOOD','SKILL ISSUE',
-];
+const TAUNTS = ['NICE TRY','SKILL ISSUE','PATHETIC','THAT WAS OBVIOUS','LOL','ARE YOU EVEN TRYING?','PREDICTED','L RATIO','STILL ALIVE?','TOUCH GRASS','JUST STOP','PAIN IS INFORMATION','COPE','YOU FOOL','CLASSIC','MAYBE PLAY EASIER','WOW...','BRUH','GET GOOD'];
 
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
 
@@ -541,11 +510,7 @@ function loadLevel(idx){
     y: lvl.sy * CS - PLAYER_H,
     vx: 0, vy: 0,
     onGround: false,
-    eyeAng: 0,
-    stretch: 1,
-    lean: 0,
-    blinking: 0,
-    trailPts: [],
+    eyeAng: 0, stretch: 1, lean: 0, blinking: 0, trailPts: [],
   };
 
   resizeCanvas();
@@ -564,6 +529,7 @@ function setTile(col, row, val){
 }
 function isSolid(t){ return t===1||t===5||t===6; }
 
+// All spikes (3 and 4) kill from any direction
 function touchesSpike(x, y){
   const w = PLAYER_W, h = PLAYER_H;
   const c0 = Math.floor(x/CS), c1 = Math.floor((x+w-1)/CS);
@@ -642,25 +608,23 @@ function collideTiles(px, py, vx, vy){
     ny=py; p.vy=0;
   } else { p.onGround=false; }
 
-  // Ghost tiles
-  {
-    const c0 = Math.floor(nx/CS), c1 = Math.floor((nx+w-1)/CS);
-    const r = Math.floor((ny+h)/CS);
-    for(let c=c0;c<=c1;c++){
-      const t = tileAt(c,r-1);
-      if(t===6){
-        const k = gk(c,r-1);
-        const cnt = (state.ghostTiles.get(k)||0)+1;
-        state.ghostTiles.set(k,cnt);
-        if(cnt>4){ setTile(c,r-1,0); state.ghostTiles.delete(k); sfx('trap'); }
-      }
-      if(t===5 && vy>0 && p.onGround){
-        const k2 = gk(c,r-1);
-        if(!state.firedTriggers.has('f5'+k2)){
-          state.firedTriggers.add('f5'+k2);
-          setTimeout(()=>setTile(c,r-1,0),300);
-          sfx('trap');
-        }
+  // Ghost and fake tiles
+  const c0 = Math.floor(nx/CS), c1 = Math.floor((nx+w-1)/CS);
+  const r = Math.floor((ny+h)/CS);
+  for(let c=c0;c<=c1;c++){
+    const t = tileAt(c,r-1);
+    if(t===6){
+      const k = gk(c,r-1);
+      const cnt = (state.ghostTiles.get(k)||0)+1;
+      state.ghostTiles.set(k,cnt);
+      if(cnt>4){ setTile(c,r-1,0); state.ghostTiles.delete(k); sfx('trap'); }
+    }
+    if(t===5 && vy>0 && p.onGround){
+      const k2 = gk(c,r-1);
+      if(!state.firedTriggers.has('f5'+k2)){
+        state.firedTriggers.add('f5'+k2);
+        setTimeout(()=>setTile(c,r-1,0),300);
+        sfx('trap');
       }
     }
   }
@@ -686,10 +650,6 @@ function execTrigger(tr){
     state.fallingBlocks.push({c:tr.blockCol, fy:0, speed:2, landed:false});
   } else if(tr.action==='spike_wall'){
     for(const c of tr.cols) setTile(c, tr.row, 3);
-  } else if(tr.action==='reveal_spikes'){
-    const c = Math.floor(tr.cx), r = Math.floor(tr.cy);
-    setTile(c, r, 3);
-    setTile(c+1, r, 3);
   }
 }
 
@@ -710,23 +670,24 @@ function updateFallingBlocks(){
 }
 
 function handleExit(ec, er){
-  if(!state.exitTrolled){
-    state.exitTrolled = true;
-    setTile(ec, er, 3);
+  // Random troll! 50% chance
+  const isTroll = Math.random() < 0.5;
+  if(isTroll){
+    setTile(ec, er, 4); // Convert to hidden spike
     sfx('troll');
-    showMsg('NICE TRY — NOT THE EXIT');
-    setTimeout(()=>{ setTile(ec, er, 8); showMsg('...OK NOW IT IS'); }, 1500);
+    showMsg('NICE TRY â€” NOT THE EXIT');
+    setTimeout(()=>{ setTile(ec, er, 8); }, 1500);
     return;
   }
   sfx('win');
   if(state.lvlIdx < LEVELS.length-1){
-    showOverlay('ZONE CLEARED',`ZONE ${state.lvlIdx+1} COMPLETE`,`Deaths: ${state.deaths}`,'▶ NEXT ZONE',()=>{
+    showOverlay('ZONE CLEARED',`ZONE ${state.lvlIdx+1} COMPLETE`,`Deaths: ${state.deaths}`,'â–¶ NEXT ZONE',()=>{
       loadLevel(state.lvlIdx+1);
       hideOverlay();
     });
   } else {
     localStorage.setItem('ft_hi', state.deaths);
-    showOverlay('YOU SURVIVED',`Total deaths: ${state.deaths}`,'ALL ZONES CLEARED','↺ PLAY AGAIN',()=>{
+    showOverlay('YOU SURVIVED',`Total deaths: ${state.deaths}`,'ALL ZONES CLEARED','â†º PLAY AGAIN',()=>{
       state.deaths=0;
       document.getElementById('hv-deaths').textContent='0';
       loadLevel(0);
@@ -755,6 +716,20 @@ function showOverlay(pre, title, sub, btnTxt, btnCb){
 }
 function hideOverlay(){ document.getElementById('overlay').classList.add('off'); }
 
+function togglePause(){
+  if(!state.running) return;
+  state.paused = !state.paused;
+  if(state.paused){
+    showOverlay('PAUSED','','','â–¶ RESUME',()=>{
+      state.paused = false;
+      hideOverlay();
+    });
+  }
+}
+
+// PAUSE BUTTON
+document.getElementById('btn-pause').addEventListener('click',togglePause);
+
 // RENDERER
 const PAL = {
   bg: '#04060f', floor: '#0e2030', floorG: '#1a3a50', steel: '#1a2a3a',
@@ -772,17 +747,12 @@ function drawTile(col, row, t){
     ctx.beginPath(); ctx.roundRect(x+1,y+1,s-2,s-2,2); ctx.fill();
     ctx.strokeStyle = PAL.floorG; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(x+2,y+2); ctx.lineTo(x+s-2,y+2); ctx.stroke();
-  } else if(t===3){
+  } else if(t===3 || t===4){
     ctx.fillStyle=PAL.spike;
     const mid=x+s/2, tip=y+2, base=y+s-2, hw=s*0.4;
     ctx.beginPath(); ctx.moveTo(mid,tip); ctx.lineTo(mid+hw,base); ctx.lineTo(mid-hw,base);
     ctx.closePath(); ctx.fill();
     ctx.strokeStyle=PAL.spikeG; ctx.lineWidth=1.5; ctx.stroke();
-  } else if(t===4){
-    ctx.fillStyle='#070d15';
-    ctx.fillRect(x+1,y+1,s-2,s-2);
-    ctx.strokeStyle='rgba(255,50,60,.08)'; ctx.lineWidth=1;
-    ctx.strokeRect(x+1,y+1,s-2,s-2);
   } else if(t===5){
     ctx.fillStyle=PAL.fake;
     ctx.beginPath(); ctx.roundRect(x+2,y+2,s-4,s-4,3); ctx.fill();
@@ -810,7 +780,7 @@ function drawTile(col, row, t){
     ctx.fillStyle=`rgba(0,255,200,${pulse})`;
     ctx.font=`bold ${s*0.5}px monospace`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('▶',x+s/2,y+s/2);
+    ctx.fillText('â–¶',x+s/2,y+s/2);
   }
 }
 
@@ -933,6 +903,7 @@ const keys={left:false,right:false,jump:false,jumpJustPressed:false};
 let _jumpWasDown=false;
 
 document.addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'||e.key==='Escape'){ togglePause(); return; }
   if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A') keys.left=true;
   if(e.key==='ArrowRight'||e.key==='d'||e.key==='D') keys.right=true;
   if((e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W')&&!_jumpWasDown){
@@ -965,7 +936,7 @@ bindBtn('btn-jump','jump');
 let lastTime=0;
 function loop(ts){
   requestAnimationFrame(loop);
-  if(!state.running) return;
+  if(!state.running || state.paused) return;
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
 
   if(state.flashTimer>0) state.flashTimer--;
@@ -1011,7 +982,7 @@ function loop(ts){
   const ang = Math.atan2(p.vy*0.3, p.vx);
   p.eyeAng += (ang-p.eyeAng)*.15;
 
-  // Kill by spikes - any direction!
+  // ALL spikes kill!
   if(touchesSpike(p.x,p.y)) killPlayer();
   if(p.y>canvas.height+CS||p.y<-CS*2) killPlayer();
 
@@ -1034,6 +1005,7 @@ function startGame(){
   hideOverlay();
   loadLevel(0);
   state.running=true;
+  state.paused=false;
   lastTime=performance.now();
 }
 
