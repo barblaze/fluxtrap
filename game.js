@@ -860,6 +860,9 @@ class Game {
     p.vx = 0;
     p.vy = 0;
     p.onGround = false;
+    p.eyeAng = 0;
+    p.stretch = 1;
+    p.lean = 0;
     p.trailPts = [];
     this.state.dying = false;
     this.state.invinTimer = INVIN_DUR;
@@ -943,11 +946,9 @@ class Game {
     if (this.keys.left) p.vx -= MOVE_ACC * dt;
     if (this.keys.right) p.vx += MOVE_ACC * dt;
     if (!this.keys.left && !this.keys.right) {
-      if (p.vx > 0) p.vx = Math.max(0, p.vx - 800 * dt);
-      else if (p.vx < 0) p.vx = Math.min(0, p.vx + 800 * dt);
+      p.vx = 0;
     }
     if (Math.abs(p.vx) > MOVE_SPD) p.vx = MOVE_SPD * Math.sign(p.vx);
-    if (Math.abs(p.vx) < 2) p.vx = 0;
     if (this.keys.jumpJustPressed) {
       if (p.onGround || s.gravFlip) {
         p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
@@ -1272,16 +1273,12 @@ class Game {
     const doDown = (e) => {
       if (e) e.preventDefault();
       this.keys[keyName] = true;
-      if (keyName === 'jump' && !this._jumpWasDown) {
-        this.keys.jumpJustPressed = true;
-        this._jumpWasDown = true;
-      }
+      if (keyName === 'jump') this.keys.jumpJustPressed = true;
       el.classList.add('pressed');
     };
     const doUp = (e) => {
       if (e) e.preventDefault();
       this.keys[keyName] = false;
-      if (keyName === 'jump') this._jumpWasDown = false;
       el.classList.remove('pressed');
     };
     el.addEventListener('touchstart', doDown, { passive: false });
