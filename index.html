@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#00ffcc">
-<meta name="description" content="FLUXTRAP â€” A masocore platformer where nothing is fair and everything kills you.">
+<meta name="description" content="FLUXTRAP - A masocore platformer where nothing is fair and everything kills you.">
 <title>FLUXTRAP</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap');
@@ -40,6 +40,10 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   padding:8px 16px;padding-bottom:calc(8px + var(--sb));
   display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0
+}
+@media (hover: hover) and (pointer: fine) {
+  #ctrl-bar{display:none}
+  #hud-top{padding-bottom:8px}
 }
 
 .hud-grp{display:flex;flex-direction:column;align-items:center;gap:1px}
@@ -129,23 +133,23 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
     <div id="overlay">
       <div id="ov-pre">WELCOME TO</div>
       <div id="ov-title">FLUXTRAP</div>
-      <div id="ov-sub">NOTHING IS FAIR Â· EVERYTHING KILLS YOU</div>
+      <div id="ov-sub">NOTHING IS FAIR - EVERYTHING KILLS YOU</div>
       <div id="ov-tip">
-        â† â†’ MOVE &nbsp;|&nbsp; â†‘ or A JUMP<br>
-        Reach the <span style="color:var(--c)">EXIT</span> â€” if it lets you.
+        ARROWS / WASD TO MOVE - SPACE/UP TO JUMP<br>
+        Reach the <span style="color:var(--c)">EXIT</span> if it lets you.
       </div>
-      <button class="ov-btn" id="ov-btn">â–¶ START SUFFERING</button>
+      <button class="ov-btn" id="ov-btn">START SUFFERING</button>
     </div>
   </div>
 
   <div id="ctrl-bar">
     <div class="btn-grp">
-      <div class="ctrl-btn dir-btn" id="btn-l">â—€</div>
+      <div class="ctrl-btn dir-btn" id="btn-l"><</div>
       <div id="dpad-mid"></div>
-      <div class="ctrl-btn dir-btn" id="btn-r">â–¶</div>
+      <div class="ctrl-btn dir-btn" id="btn-r">></div>
     </div>
     <div class="btn-grp">
-      <div class="ctrl-btn act-btn" id="btn-jump">JUMP<br>â–²</div>
+      <div class="ctrl-btn act-btn" id="btn-jump">JUMP</div>
     </div>
   </div>
 </div>
@@ -209,7 +213,7 @@ const PLAYER_H = 20;
 
 // 10 ZONES - All spikes hidden (4), can kill from any direction
 const LEVELS = [
-// ZONE 01 â€” Tutorial del Dolor
+// ZONE 01 - Tutorial del Dolor
 {
   pw:20, ph:14, sx:1, sy:11,
   map:[
@@ -234,7 +238,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 02 â€” Mentiras SÃ³lidas
+// ZONE 02 - Mentiras Solidas
 {
   pw:22, ph:14, sx:1, sy:11,
   map:[
@@ -259,7 +263,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 03 â€” El SÃ¡dico
+// ZONE 03 - El Sadico
 {
   pw:24, ph:15, sx:1, sy:12,
   map:[
@@ -285,7 +289,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 04 â€” El Hueco Infinito
+// ZONE 04 - El Hueco Infinito
 {
   pw:20, ph:16, sx:1, sy:13,
   map:[
@@ -311,7 +315,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 05 â€” La CÃ¡mara de los Secretos
+// ZONE 05 - La Camara de los Secretos
 {
   pw:24, ph:14, sx:1, sy:10,
   map:[
@@ -335,7 +339,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 06 â€” El Piso es Lava
+// ZONE 06 - El Piso es Lava
 {
   pw:22, ph:13, sx:1, sy:10,
   map:[
@@ -358,7 +362,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 07 â€” Laberinto Vertical
+// ZONE 07 - Laberinto Vertical
 {
   pw:18, ph:18, sx:1, sy:15,
   map:[
@@ -385,7 +389,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 08 â€” Techo CaÃ­do
+// ZONE 08 - Techo Caido
 {
   pw:20, ph:12, sx:1, sy:9,
   map:[
@@ -407,7 +411,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 09 â€” El Final del Camino
+// ZONE 09 - El Final del Camino
 {
   pw:26, ph:14, sx:1, sy:11,
   map:[
@@ -431,7 +435,7 @@ const LEVELS = [
   ]
 },
 
-// ZONE 10 â€” VocÃª Morre Aqui
+// ZONE 10 - Voce Morre Aqui
 {
   pw:28, ph:15, sx:1, sy:12,
   map:[
@@ -675,13 +679,13 @@ function handleExit(ec, er){
   if(isTroll){
     setTile(ec, er, 4); // Convert to hidden spike
     sfx('troll');
-    showMsg('NICE TRY â€” NOT THE EXIT');
+    showMsg('NICE TRY - NOT THE EXIT');
     setTimeout(()=>{ setTile(ec, er, 8); }, 1500);
     return;
   }
   sfx('win');
   if(state.lvlIdx < LEVELS.length-1){
-    showOverlay('ZONE CLEARED',`ZONE ${state.lvlIdx+1} COMPLETE`,`Deaths: ${state.deaths}`,'â–¶ NEXT ZONE',()=>{
+    showOverlay('ZONE CLEARED',`ZONE ${state.lvlIdx+1} COMPLETE`,`Deaths: ${state.deaths}`,'NEXT ZONE',()=>{
       loadLevel(state.lvlIdx+1);
       hideOverlay();
     });
@@ -720,7 +724,7 @@ function togglePause(){
   if(!state.running) return;
   state.paused = !state.paused;
   if(state.paused){
-    showOverlay('PAUSED','','','â–¶ RESUME',()=>{
+    showOverlay('PAUSED','','','RESUME',()=>{
       state.paused = false;
       hideOverlay();
     });
@@ -780,7 +784,7 @@ function drawTile(col, row, t){
     ctx.fillStyle=`rgba(0,255,200,${pulse})`;
     ctx.font=`bold ${s*0.5}px monospace`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('â–¶',x+s/2,y+s/2);
+    ctx.fillText('E',x+s/2,y+s/2);
   }
 }
 
@@ -934,10 +938,19 @@ bindBtn('btn-jump','jump');
 
 // GAME LOOP
 let lastTime=0;
+let fpsTime=0, fpsCount=0, currentFPS=60;
+const TARGET_FPS=60, FRAME_TIME=1000/TARGET_FPS;
 function loop(ts){
   requestAnimationFrame(loop);
   if(!state.running || state.paused) return;
-  const dt=Math.min(ts-lastTime,50); lastTime=ts;
+  
+  fpsTime+=ts-lastTime;
+  fpsCount++;
+  if(fpsTime>=1000){currentFPS=fpsCount;fpsCount=0;fpsTime=0;}
+  
+  const elapsed=ts-lastTime;
+  if(elapsed<FRAME_TIME) return;
+  lastTime=ts-(elapsed%FRAME_TIME);
 
   if(state.flashTimer>0) state.flashTimer--;
   if(state.invinTimer>0) state.invinTimer--;
