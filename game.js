@@ -602,7 +602,7 @@ class Game {
       invinTimer: 0,
       entities: [],
     };
-    this.keys = { left: false, right: false, jump: false, jumpJustPressed: false };
+    this.keys = { left: false, right: false, jump: false, jumpJustPressed: false, leftReleased: false, rightReleased: false };
     this._jumpWasDown = false;
     this._lastTS = 0;
     this._bindInput();
@@ -923,11 +923,9 @@ const p = s.player;
     p.vy += GRAVITY * gDir * dt;
     if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
 
-    if (this.keys.left) p.vx -= MOVE_ACC * dt;
-    if (this.keys.right) p.vx += MOVE_ACC * dt;
-    if (!this.keys.left && !this.keys.right) {
-      p.vx = 0;
-    }
+    if (this.keys.left && !this.keys.leftReleased) p.vx = -MOVE_SPD * 0.5;
+    else if (this.keys.right && !this.keys.rightReleased) p.vx = MOVE_SPD * 0.5;
+    else p.vx = 0;
 
     if (this.keys.jump) {
       if (p.onGround || s.gravFlip) {
@@ -1232,8 +1230,8 @@ const p = s.player;
       e.preventDefault();
     }, { passive: false });
     document.addEventListener('keyup', e => {
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = false;
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = false;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { this.keys.left = false; this.keys.leftReleased = true; this.keys.left = false; }
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { this.keys.right = false; this.keys.rightReleased = true; this.keys.right = false; }
       if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         this.keys.jump = false;
         this._jumpWasDown = false;
@@ -1266,6 +1264,8 @@ const p = s.player;
       e.preventDefault();
       e.stopPropagation();
       this.keys[keyName] = false;
+      if (keyName === 'left') { this.keys.leftReleased = true; }
+      if (keyName === 'right') { this.keys.rightReleased = true; }
       el.classList.remove('pressed');
     };
     el.addEventListener('touchstart', doDown, { passive: false });
