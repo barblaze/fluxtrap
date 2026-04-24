@@ -1,9 +1,9 @@
 'use strict';
 
-const PLAYER_W = 18;
-const PLAYER_H = 20;
+const PLAYER_W = 16;
+const PLAYER_H = 18;
 
-const CS = 20;  // tamaño del tile en píxeles
+const CS = 24;  // tamaño del tile en píxeles
 const DEBUG_SENSORS = false;
 
 const GRAVITY    = 900;
@@ -955,11 +955,17 @@ const p = s.player;
       p.stretch = 1.2;
     }
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
-    p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
-    p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
-    if (Math.random() < dt * 0.1) p.blinking = 0.1;
+    if (p.onGround) {
+      p.stretch = 1;
+      p.lean = 0;
+      p.eyeAng = 0;
+    } else {
+      p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
+      p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
+      p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
+    }
+    if (Math.random() < dt * 0.05) p.blinking = 0.1;
     if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
-    p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
     if (this.touchesSpike(p.x, p.y)) this.killPlayer();
     if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
     this.checkTriggers();
