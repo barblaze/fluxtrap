@@ -7,7 +7,7 @@ const CS = 20;  // tamaño del tile en píxeles
 const DEBUG_SENSORS = false;
 
 const GRAVITY    = 900;
-const JUMP_VEL  = -440;
+const JUMP_VEL  = -380;
 const MOVE_ACC  = 1800;
 const MOVE_SPD  = 150;
 const MAX_FALL = 600;
@@ -929,6 +929,7 @@ const p = s.player;
     if (this.keys.jump && (p.onGround || s.gravFlip)) {
       p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
       p.onGround = false;
+      p.stretch = 1.3;
       sfx('jump');
       this.keys.jump = false;
     }
@@ -955,18 +956,15 @@ const p = s.player;
       p.stretch = 1.2;
     }
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
-    if (p.onGround) {
-      p.stretch = 1;
-      p.lean = 0;
-      p.eyeAng = 0;
-      p.blinking = 0;
+    
+    if (!p.onGround) {
+      p.stretch = 1 + (p.vy < 0 ? 0.2 : -0.1);
     } else {
-      p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
-      p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
-      if (Math.random() < dt * 0.05) p.blinking = 0.1;
-      if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
-      p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
+      p.stretch = 1;
     }
+    p.lean = 0;
+    p.eyeAng = 0;
+    p.blinking = 0;
     if (this.touchesSpike(p.x, p.y)) this.killPlayer();
     if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
     this.checkTriggers();
