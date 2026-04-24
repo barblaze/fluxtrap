@@ -1,24 +1,19 @@
 'use strict';
 
-const PLAYER_W = 16;
-const PLAYER_H = 18;
-const CS = 20;
+const PLAYER_W = 16, PLAYER_H = 18, CS = 20;
+const GRAVITY = 900, JUMP_VEL = -380, MOVE_SPD = 150;
+const MAX_FALL = 600, DEATH_DUR = 1.0;
+const INVIN_DUR = 1.333, GRAV_DUR = 3.0;
+const TARGET_DT = 1 / 60, MAX_DT = 1 / 20;
 const SKIN = 0.5;
 
-const GRAVITY = 900;
-const JUMP_VEL = -380;
-const MOVE_SPD = 150;
-const MAX_FALL = 600;
-const DEATH_DUR = 1.0;
-const INVIN_DUR = 1.333;
-const GRAV_DUR = 3.0;
-const TARGET_DT = 1 / 60;
-const MAX_DT = 1 / 20;
-
-const TAUNTS = ['NICE TRY', 'SKILL ISSUE', 'PATHETIC', 'LOL', 'ARE YOU TRYING?'];
+const PAL = {
+  bg: '#04060f', floor: '#0e2030', floorG: '#1a3a50',
+  spike: '#ff3040', exit: '#00ffcc', grav: '#ff00aa',
+  player: '#e0f0ff', eye: '#00ffcc'
+};
 
 let actx = null;
-
 function initAudio() {
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
 }
@@ -30,262 +25,99 @@ function sfx(type) {
     o.connect(g);
     g.connect(actx.destination);
     const t = actx.currentTime;
-    switch (type) {
-      case 'jump':
-        o.type = 'square'; o.frequency.setValueAtTime(220, t);
-        o.frequency.exponentialRampToValueAtTime(440, t + 0.08);
-        g.gain.setValueAtTime(0.18, t).exponentialRampToValueAtTime(0.001, t + 0.12);
-        o.start(t); o.stop(t + 0.12); break;
-      case 'die':
-        o.type = 'sawtooth'; o.frequency.setValueAtTime(440, t);
-        o.frequency.exponentialRampToValueAtTime(55, t + 0.35);
-        g.gain.setValueAtTime(0.25, t).exponentialRampToValueAtTime(0.001, t + 0.35);
-        o.start(t); o.stop(t + 0.35); break;
-      case 'trap':
-        o.type = 'square'; o.frequency.setValueAtTime(880, t);
-        o.frequency.exponentialRampToValueAtTime(110, t + 0.15);
-        g.gain.setValueAtTime(0.2, t).exponentialRampToValueAtTime(0.001, t + 0.15);
-        o.start(t); o.stop(t + 0.15); break;
-      case 'win':
-        o.type = 'triangle'; o.frequency.setValueAtTime(440, t);
-        o.frequency.linearRampToValueAtTime(1760, t + 0.2);
-        g.gain.setValueAtTime(0.22, t).exponentialRampToValueAtTime(0.001, t + 0.3);
-        o.start(t); o.stop(t + 0.3); break;
+    if (type === 'jump') {
+      o.type = 'square'; o.frequency.setValueAtTime(220, t);
+      o.frequency.exponentialRampToValueAtTime(440, t + 0.08);
+      g.gain.setValueAtTime(0.18, t).exponentialRampToValueAtTime(0.001, t + 0.12);
+      o.start(t); o.stop(t + 0.12);
+    } else if (type === 'die') {
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(440, t);
+      o.frequency.exponentialRampToValueAtTime(55, t + 0.35);
+      g.gain.setValueAtTime(0.25, t).exponentialRampToValueAtTime(0.001, t + 0.35);
+      o.start(t); o.stop(t + 0.35);
+    } else if (type === 'win') {
+      o.type = 'triangle'; o.frequency.setValueAtTime(440, t);
+      o.frequency.linearRampToValueAtTime(1760, t + 0.2);
+      g.gain.setValueAtTime(0.22, t).exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.start(t); o.stop(t + 0.3);
+    } else if (type === 'trap') {
+      o.type = 'square'; o.frequency.setValueAtTime(880, t);
+      o.frequency.exponentialRampToValueAtTime(110, t + 0.15);
+      g.gain.setValueAtTime(0.2, t).exponentialRampToValueAtTime(0.001, t + 0.15);
+      o.start(t); o.stop(t + 0.15);
     }
   } catch (e) {}
 }
 
-const PAL = {
-  bg: '#04060f', floor: '#0e2030', floorG: '#1a3a50',
-  spike: '#ff3040', spikeG: '#ff8090', ghost: 'rgba(40,180,120,.45)',
-  exit: '#00ffcc', grav: '#ff00aa', player: '#e0f0ff', eye: '#00ffcc',
-};
-
-class Entity {
-  constructor(config) {
-    this.id = config.id || 'entity';
-    this.state = 'IDLE';
-    this.timer = 0;
-    this._dead = false;
-  }
-
-  static STATES = { IDLE: 'IDLE', TRIGGERED: 'TRIGGERED', ACTIVE: 'ACTIVE', RESET: 'RESET' };
-
-  trigger() {
-    if (this.state === Entity.STATES.IDLE) {
-      this.state = Entity.STATES.TRIGGERED;
-      this.timer = 0;
-    }
-  }
-
-  update(dt, game) {
-    this.timer = Math.max(0, this.timer - dt);
-    if (this.state === Entity.STATES.TRIGGERED && this.timer <= 0) {
-      this.activate(game);
-    }
-  }
-
-  activate(game) {
-    this.state = Entity.STATES.ACTIVE;
-  }
-
-  reset() {
-    this.state = Entity.STATES.IDLE;
-    this.timer = 0;
-  }
-}
-
-class DropBlock extends Entity {
-  constructor(config) {
-    super(config);
-    this.col = config.col;
-    this.row = config.row;
-    this.fallSpeed = 0;
-    this.y = this.row * CS;
-    this.landed = false;
-  }
-
-  activate(game) {
-    this.state = Entity.STATES.ACTIVE;
-    this.fallSpeed = 120;
-    sfx('trap');
-  }
-
-  update(dt, game) {
-    if (this.state !== Entity.STATES.ACTIVE || this.landed) return;
-    
-    this.fallSpeed = Math.min(this.fallSpeed + 1440 * dt, 840);
-    this.y += this.fallSpeed * dt;
-    
-    const row = Math.floor(this.y / CS);
-    const nextRow = game.tiles[row + 1];
-    if (row >= game.level.ph - 1 || (nextRow && game.isSolid(nextRow[col]))) {
-      this.landed = true;
-      game.tiles[row] = game.tiles[row] || [];
-      game.tiles[row][this.col] = 1;
-      
-      const p = game.player;
-      const pc = Math.floor((p.x + PLAYER_W / 2) / CS);
-      if (pc === this.col && Math.abs(p.y + PLAYER_H / 2 - this.y) < CS * 1.5) {
-        game.killPlayer();
-      }
-    }
-  }
-}
-
-class SpikeWall extends Entity {
-  constructor(config) {
-    super(config);
-    this.cols = config.cols || [];
-    this.row = config.row;
-  }
-
-  activate(game) {
-    for (const c of this.cols) {
-      game.tiles[this.row] = game.tiles[this.row] || [];
-      game.tiles[this.row][c] = 3;
-    }
-    sfx('trap');
-  }
-}
-
-class GravityFlip extends Entity {
-  activate(game) {
-    game.gravFlip = true;
-    game.gravTimer = GRAV_DUR;
-    sfx('trap');
-  }
-}
-
-class InvisibleTrigger {
-  constructor(config) {
-    this.id = config.id;
-    this.cx = config.cx;
-    this.cy = config.cy;
-    this.r = config.r;
-    this.action = config.action;
-    this.params = config.params || {};
-    this.fired = false;
-  }
-
-  check(player, game) {
-    if (this.fired) return;
-    const pc = (player.x + PLAYER_W / 2) / CS;
-    const pr = (player.y + PLAYER_H / 2) / CS;
-    if (Math.hypot(pc - this.cx, pr - this.cy) < this.r) {
-      this.fire(game);
-    }
-  }
-
-  fire(game) {
-    this.fired = true;
-    const action = this.action;
-    const params = this.params;
-    
-    switch (action) {
-      case 'drop_block':
-        game.entities.push(new DropBlock({ id: this.id, col: params.blockCol, row: params.blockRow }));
-        break;
-      case 'spike_wall':
-        game.entities.push(new SpikeWall({ id: this.id, cols: params.cols, row: params.row }));
-        break;
-      case 'gravity_flip':
-        game.entities.push(new GravityFlip({ id: this.id }));
-        break;
-    }
-    sfx('trap');
-  }
-}
-
 class LevelManager {
-  constructor() {
-    this.levels = [];
-    this.currentIdx = 0;
-  }
-
-  async load(url = './mapa.json') {
+  constructor() { this.levels = []; }
+  async load(url) {
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to load');
+      if (!res.ok) throw new Error('Failed');
       this.levels = await res.json();
+      console.log('Levels loaded:', this.levels.length);
       return true;
-    } catch (e) {
-      console.error('Level load error:', e);
-      return false;
-    }
+    } catch (e) { console.error('Load error:', e); return false; }
   }
-
-  getLevel(idx) {
-    return this.levels[idx] || null;
-  }
-
-  get count() {
-    return this.levels.length;
-  }
+  getLevel(idx) { return this.levels[idx] || null; }
 }
 
 class Game {
   constructor() {
-    this.levelManager = new LevelManager();
+    this.lm = new LevelManager();
     this.tiles = [];
-    this.entities = [];
-    this.triggers = [];
     this.player = { x: 0, y: 0, vx: 0, vy: 0, onGround: false };
-    this.level = null;
     this.keys = { left: false, right: false, jump: false };
-    this.state = {
-      running: false, paused: false, lvlIdx: 0, deaths: 0,
-      dying: false, deathTimer: 0, invinTimer: 0,
-      flashTimer: 0, gravFlip: false, gravTimer: 0,
-      msg: '', msgTimer: 0, overlay: null,
-      started: false, loading: true, loaded: false
-    };
+    this.state = { running: false, started: false, loaded: false, lvlIdx: 0, deaths: 0, dying: false, deathTimer: 0, invinTimer: 0, gravFlip: false, gravTimer: 0 };
     this._lastTS = 0;
-    console.log('1. DOM Cargado');
+    console.log('Game created');
   }
 
-  async init(canvasId = 'c') {
-    console.log('2. Iniciando load...');
-    const loaded = await this.levelManager.load();
-    console.log('3. JSON cargado:', loaded);
-    if (!loaded) {
-      this._showMsg('LOAD ERROR');
-      this.state.loading = false;
-      return;
-    }
+  async init() {
+    console.log('Init starting...');
+    const loaded = await this.lm.load('./mapa.json');
+    if (!loaded) { console.log('LOAD FAILED'); return; }
     this.state.loaded = true;
-    this.canvas = document.getElementById(canvasId);
+    this.canvas = document.getElementById('c');
     this.ctx = this.canvas.getContext('2d');
     this._resize();
-    window.addEventListener('resize', () => this._resize());
     this.loadLevel(0);
     this._bindEvents();
-    console.log('4. Botón de inicio vinculado');
     this.state.running = true;
     requestAnimationFrame(t => this._loop(t));
-    console.log('5. Game Loop iniciado');
+    console.log('Game running');
   }
 
-_resize() {
+  _resize() {
     const c = this.canvas;
-    c.width = c.parentElement && c.parentElement.clientWidth || 400;
+    c.width = c.parentElement ? c.parentElement.clientWidth : 400;
     c.height = c.height || 300;
   }
 
   _bindEvents() {
     const g = this;
-    window.addEventListener('keydown', e => g._handleStart());
-    window.addEventListener('touchstart', e => {
-      e.preventDefault();
-      g._handleStart();
-    }, { passive: false });
-    window.addEventListener('click', e => g._handleStart());
+    
+    const startHandler = function(e) {
+      console.log('Event:', e.type, 'started:', g.state.started, 'loaded:', g.state.loaded);
+      if (g.state.started) return;
+      if (!g.state.loaded) return;
+      console.log('STARTING!');
+      g.state.started = true;
+      initAudio();
+    };
+    
+    window.addEventListener('keydown', startHandler);
+    window.addEventListener('touchstart', startHandler, false);
+    window.addEventListener('click', startHandler);
+    
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') g.keys.left = false;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') g.keys.right = false;
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') g.keys.jump = false;
     });
-    this.canvas.addEventListener('touchstart', e => {
+    
+    window.addEventListener('touchstart', e => {
       if (!g.state.started) return;
       e.preventDefault();
       const t = e.touches[0];
@@ -295,63 +127,27 @@ _resize() {
       g.keys.right = x >= rect.width / 2;
       g.keys.jump = true;
     }, { passive: false });
-    this.canvas.addEventListener('touchend', e => {
-      e.preventDefault();
+    
+    window.addEventListener('touchend', e => {
       g.keys.left = g.keys.right = g.keys.jump = false;
     }, { passive: false });
   }
 
-  _handleStart() {
-    if (this.state.started) return;
-    if (!this.state.loaded) return;
-    console.log('STARTING GAME...');
-    this.state.started = true;
-    initAudio();
-  }
-
   loadLevel(idx) {
-    const lvl = this.levelManager.getLevel(idx);
+    const lvl = this.lm.getLevel(idx);
     if (!lvl) return;
     this.level = lvl;
     this.tiles = [];
-    for (let r = 0; r < lvl.map.length; r++) {
-      this.tiles[r] = [...lvl.map[r]];
-    }
-    this.entities = [];
-    this.triggers = [];
-    
-    if (lvl.triggers) {
-      for (const t of lvl.triggers) {
-        this.triggers.push(new InvisibleTrigger(t));
-      }
-    }
-    
+    for (let r = 0; r < lvl.map.length; r++) this.tiles[r] = [...lvl.map[r]];
     this.player.x = lvl.sx * CS + CS / 2 - PLAYER_W / 2;
     this.player.y = lvl.sy * CS - PLAYER_H;
-    this.player.vx = 0;
-    this.player.vy = 0;
-    this.player.onGround = false;
-    
+    this.player.vx = 0; this.player.vy = 0;
     this.state.lvlIdx = idx;
     this.state.gravFlip = false;
-    this.state.gravTimer = 0;
-    this.state.dying = false;
-    this.state.invinTimer = INVIN_DUR;
-    this.state.msg = '';
   }
 
-  isSolid(tile) {
-    return tile === 1 || tile === 5 || tile === 6;
-  }
-
-  getTile(c, r) {
-    return (this.tiles[r] && this.tiles[r][c]) || 1;
-  }
-
-  setTile(c, r, v) {
-    this.tiles[r] = this.tiles[r] || [];
-    this.tiles[r][c] = v;
-  }
+  getTile(c, r) { return this.tiles[r] && this.tiles[r][c]; }
+  isSolid(t) { return t === 1 || t === 5 || t === 6; }
 
   _sweepX(x, y, dx) {
     if (Math.abs(dx) < SKIN) return { nx: x, hitWall: false };
@@ -359,9 +155,7 @@ _resize() {
     const col = dx > 0 ? Math.floor((nx + PLAYER_W - 1) / CS) : Math.floor(nx / CS);
     const r0 = Math.floor(y / CS), r1 = Math.floor((y + PLAYER_H - 1) / CS);
     for (let r = r0; r <= r1; r++) {
-      if (this.isSolid(this.getTile(col, r))) {
-        return { nx: dx > 0 ? col * CS - PLAYER_W : (col + 1) * CS, hitWall: true };
-      }
+      if (this.isSolid(this.getTile(col, r))) return { nx: dx > 0 ? col * CS - PLAYER_W : (col + 1) * CS, hitWall: true };
     }
     return { nx, hitWall: false };
   }
@@ -372,10 +166,8 @@ _resize() {
     const row = dy > 0 ? Math.floor((ny + PLAYER_H - 1) / CS) : Math.floor(ny / CS);
     const c0 = Math.floor(x / CS), c1 = Math.floor((x + PLAYER_W - 1) / CS);
     for (let c = c0; c <= c1; c++) {
-      const checkRow = game.tiles[row];
-    if (checkRow && game.isSolid(checkRow[col])) {
-        return { ny: dy > 0 ? row * CS - PLAYER_H : (row + 1) * CS, hitFloor: dy > 0, hitCeiling: dy < 0 };
-      }
+      const checkRow = this.tiles[row];
+      if (checkRow && this.isSolid(checkRow[c])) return { ny: dy > 0 ? row * CS - PLAYER_H : (row + 1) * CS, hitFloor: dy > 0, hitCeiling: dy < 0 };
     }
     return { ny, hitFloor: false, hitCeiling: false };
   }
@@ -384,37 +176,24 @@ _resize() {
     const p = this.player;
     const c0 = Math.floor(p.x / CS), c1 = Math.floor((p.x + PLAYER_W - 1) / CS);
     const r0 = Math.floor(p.y / CS), r1 = Math.floor((p.y + PLAYER_H - 1) / CS);
-    for (let r = r0; r <= r1; r++) {
-      for (let c = c0; c <= c1; c++) {
-        const t = this.getTile(c, r);
-        if (t === 3 || t === 4) return true;
-      }
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      const t = this.getTile(c, r);
+      if (t === 3 || t === 4) return true;
     }
     return false;
   }
 
   checkExit() {
-    const p = this.player;
-    const c = Math.floor((p.x + PLAYER_W / 2) / CS);
+    const p = this.player, c = Math.floor((p.x + PLAYER_W / 2) / CS);
     const r = Math.floor((p.y + PLAYER_H / 2) / CS);
     if (this.getTile(c, r) === 8) {
-      this._levelComplete();
-    }
-  }
-
-  _levelComplete() {
-    sfx('win');
-    if (this.state.lvlIdx < this.levelManager.count - 1) {
-      this._showOverlay('ZONE CLEARED', `Level ${this.state.lvlIdx + 1}`, 'NEXT', () => {
+      sfx('win');
+      if (this.state.lvlIdx < this.lm.levels.length - 1) {
         this.loadLevel(this.state.lvlIdx + 1);
-        this._hideOverlay();
-      });
-    } else {
-      this._showOverlay('YOU WON', `Deaths: ${this.state.deaths}`, 'PLAY AGAIN', () => {
+      } else {
         this.state.deaths = 0;
         this.loadLevel(0);
-        this._hideOverlay();
-      });
+      }
     }
   }
 
@@ -425,34 +204,14 @@ _resize() {
     this.state.deaths++;
     document.getElementById('hv-deaths').textContent = this.state.deaths;
     sfx('die');
-    const taunt = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
-    this._showMsg(taunt);
-  }
-
-  _showMsg(text) {
-    this.state.msg = text;
-    this.state.msgTimer = 2;
-  }
-
-  _showOverlay(title, subtitle, btnText, onClick) {
-    this.state.overlay = { title, subtitle, btnText, onClick };
-  }
-
-  _hideOverlay() {
-    this.state.overlay = null;
   }
 
   _loop(ts) {
     requestAnimationFrame(t => this._loop(t));
-    if (!this.state.running || this.state.paused) return;
-    if (!this.state.loaded) return;
-    if (!this.state.started) return;
-    
+    if (!this.state.running) return;
     if (this._lastTS === 0) this._lastTS = ts;
-    const rawDt = Math.min((ts - this._lastTS) * 0.001, MAX_DT);
     this._lastTS = ts;
-
-    this._physicsStep(TARGET_DT);
+    if (this.state.loaded) this._physicsStep(TARGET_DT);
     this.render();
   }
 
@@ -460,32 +219,22 @@ _resize() {
     const s = this.state;
     if (!s.started) return;
     if (!this.level) return;
-    if (s.msgTimer > 0) s.msgTimer -= dt;
-    if (s.invinTimer > 0) s.invinTimer = Math.max(0, s.invinTimer - dt);
-    if (s.gravTimer > 0) {
-      s.gravTimer -= dt;
-      if (s.gravTimer <= 0) { s.gravFlip = false; this._showMsg('GRAVITY RESTORED'); }
-    }
-
     if (s.dying) {
       s.deathTimer -= dt;
       if (s.deathTimer <= 0) {
         this.player.x = this.level.sx * CS + CS / 2 - PLAYER_W / 2;
         this.player.y = this.level.sy * CS - PLAYER_H;
-        this.player.vx = 0;
-        this.player.vy = 0;
-        this.player.onGround = false;
+        this.player.vx = 0; this.player.vy = 0;
         s.dying = false;
         s.invinTimer = INVIN_DUR;
       }
       return;
     }
 
-    for (const tr of this.triggers) tr.check(this.player, this);
-
-    for (let i = this.entities.length - 1; i >= 0; i--) {
-      this.entities[i].update(dt, this);
-      if (this.entities[i]._dead) this.entities.splice(i, 1);
+    if (s.invinTimer > 0) s.invinTimer -= dt;
+    if (s.gravTimer > 0) {
+      s.gravTimer -= dt;
+      if (s.gravTimer <= 0) s.gravFlip = false;
     }
 
     const p = this.player;
@@ -494,7 +243,6 @@ _resize() {
     if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
 
     p.vx = this.keys.left ? -MOVE_SPD : (this.keys.right ? MOVE_SPD : 0);
-
     if (this.keys.jump && (p.onGround || s.gravFlip)) {
       p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
       p.onGround = false;
@@ -503,29 +251,24 @@ _resize() {
     }
 
     p.onGround = false;
-    const dx = p.vx * dt, dy = p.vy * dt;
-    const rx = this._sweepX(p.x, p.y, dx);
+    const rx = this._sweepX(p.x, p.y, p.vx * dt);
     if (rx.hitWall) p.vx = 0;
     p.x = rx.nx;
-    const ry = this._sweepY(p.x, p.y, dy);
+    const ry = this._sweepY(p.x, p.y, p.vy * dt);
     if (ry.hitFloor) { p.onGround = true; p.vy = 0; p.y = Math.round(ry.ny); }
     if (ry.hitCeiling) p.vy = 0;
     p.y = ry.ny;
 
     if (this.checkSpikes()) this.killPlayer();
     this.checkExit();
-
-    const ec = Math.floor((p.x + PLAYER_W / 2) / CS);
-    const er = Math.floor((p.y + PLAYER_H / 2) / CS);
-    if (p.y > this.level.ph * CS + CS) this.killPlayer();
   }
 
   render() {
     const ctx = this.ctx;
+    ctx.fillStyle = PAL.bg;
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
     if (!this.state.loaded) {
-      ctx.fillStyle = PAL.bg;
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.fillStyle = '#fff';
       ctx.font = '20px monospace';
       ctx.textAlign = 'center';
@@ -534,38 +277,27 @@ _resize() {
     }
     
     if (!this.state.started) {
-      ctx.fillStyle = PAL.bg;
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 36px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('FLUXTRAP', ctx.canvas.width / 2, ctx.canvas.height / 2 - 50);
-      ctx.font = '20px monospace';
-      ctx.fillStyle = '#ff00aa';
-      ctx.fillText('START SUFFERING', ctx.canvas.width / 2, ctx.canvas.height / 2);
-      ctx.fillStyle = '#ffff00';
-      ctx.font = '16px monospace';
-      ctx.fillText('[ TAP TO START ]', ctx.canvas.width / 2, ctx.canvas.height / 2 + 50);
+      ctx.fillText('FLUXTRAP', ctx.canvas.width / 2, ctx.canvas.height / 2 - 40);
+      ctx.font = '22px monospace';
+      ctx.fillStyle = PAL.grav;
+      ctx.fillText('TAP TO START', ctx.canvas.width / 2, ctx.canvas.height / 2 + 20);
       return;
     }
     
-    if (!this.level) return;
+    const lvl = this.level;
     if (!lvl) return;
-    
-    ctx.fillStyle = PAL.bg;
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
     const offX = (ctx.canvas.width - lvl.pw * CS) / 2;
     const offY = (ctx.canvas.height - lvl.ph * CS) / 2;
-
     ctx.save();
     ctx.translate(offX, offY);
-
+    
     for (let r = 0; r < lvl.ph; r++) {
       for (let c = 0; c < lvl.pw; c++) {
         const t = this.getTile(c, r);
         const x = c * CS, y = r * CS;
-        
         if (t === 1) {
           ctx.fillStyle = PAL.floor;
           ctx.fillRect(x, y, CS, CS);
@@ -584,34 +316,14 @@ _resize() {
         }
       }
     }
-
+    
     const p = this.player;
-    ctx.fillStyle = p.onGround ? PAL.player : '#a0c0d0';
+    ctx.fillStyle = this.state.dying ? '#f00' : PAL.player;
     ctx.fillRect(p.x, p.y, PLAYER_W, PLAYER_H);
     ctx.fillStyle = PAL.eye;
     ctx.fillRect(p.x + 4, p.y + 4, 3, 3);
     ctx.fillRect(p.x + 9, p.y + 4, 3, 3);
-
     ctx.restore();
-
-    if (this.state.msg && this.state.msgTimer > 0) {
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 24px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(this.state.msg, ctx.canvas.width / 2, 40);
-    }
-
-    if (this.state.overlay) {
-      const ov = this.state.overlay;
-      ctx.fillStyle = 'rgba(0,0,0,.85)';
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 32px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(ov.title, ctx.canvas.width / 2, ctx.canvas.height / 2 - 40);
-      ctx.font = '18px monospace';
-      ctx.fillText(ov.subtitle, ctx.canvas.width / 2, ctx.canvas.height / 2);
-    }
   }
 }
 
