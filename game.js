@@ -959,13 +959,14 @@ const p = s.player;
       p.stretch = 1;
       p.lean = 0;
       p.eyeAng = 0;
+      p.blinking = 0;
     } else {
       p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
       p.lean += (p.vx - p.lean) * Math.min(dt * 6, 1);
+      if (Math.random() < dt * 0.05) p.blinking = 0.1;
+      if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
       p.eyeAng += (Math.atan2(p.vy * 0.3, p.vx) - p.eyeAng) * Math.min(dt * 9, 1);
     }
-    if (Math.random() < dt * 0.05) p.blinking = 0.1;
-    if (p.blinking > 0) p.blinking = Math.max(0, p.blinking - dt);
     if (this.touchesSpike(p.x, p.y)) this.killPlayer();
     if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
     this.checkTriggers();
