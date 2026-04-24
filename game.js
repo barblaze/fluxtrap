@@ -275,7 +275,10 @@ _resize() {
   _bindEvents() {
     const g = this;
     window.addEventListener('keydown', e => g._handleStart());
-    window.addEventListener('touchstart', e => { e.preventDefault(); g._handleStart(); }, { passive: false });
+    window.addEventListener('touchstart', e => {
+      e.preventDefault();
+      g._handleStart();
+    }, { passive: false });
     window.addEventListener('click', e => g._handleStart());
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') g.keys.left = false;
@@ -283,12 +286,13 @@ _resize() {
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') g.keys.jump = false;
     });
     this.canvas.addEventListener('touchstart', e => {
+      if (!g.state.started) return;
       e.preventDefault();
       const t = e.touches[0];
       const rect = g.canvas.getBoundingClientRect();
       const x = t.clientX - rect.left;
-      if (g.keys.jump) g.keys.left = x < rect.width / 2;
-      if (g.keys.jump) g.keys.right = x >= rect.width / 2;
+      g.keys.left = x < rect.width / 2;
+      g.keys.right = x >= rect.width / 2;
       g.keys.jump = true;
     }, { passive: false });
     this.canvas.addEventListener('touchend', e => {
@@ -300,6 +304,7 @@ _resize() {
   _handleStart() {
     if (this.state.started) return;
     if (!this.state.loaded) return;
+    console.log('STARTING GAME...');
     this.state.started = true;
     initAudio();
   }
