@@ -244,7 +244,7 @@ class Game {
     console.log('1. DOM Cargado');
   }
 
-  async init(canvasId = 'game') {
+  async init(canvasId = 'c') {
     console.log('2. Iniciando load...');
     const loaded = await this.levelManager.load();
     console.log('3. JSON cargado:', loaded);
