@@ -937,6 +937,7 @@ const p = s.player;
     p.trailPts.push({ x: p.x, y: p.y });
     if (p.trailPts.length > 6) p.trailPts.shift();
     const wasGround = p.onGround;
+    const wasY = p.y;
     p.onGround = false;
     const dx = p.vx * dt, dy = p.vy * dt;
     const rx = this._sweepX(p.x, p.y, dx);
@@ -951,7 +952,7 @@ const p = s.player;
     }
     if (ry.hitCeiling) { p.vy = 0; }
     else p.y = ry.ny;
-    if (!wasGround && p.onGround) {
+    if (!wasGround && p.onGround && Math.abs(p.y - wasY) > 2) {
       sfx('land');
       p.stretch = 1.2;
     }
