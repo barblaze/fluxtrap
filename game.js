@@ -3,7 +3,7 @@
 const PLAYER_W = 16;
 const PLAYER_H = 18;
 
-const CS = 24;  // tamaño del tile en píxeles
+const CS = 20;  // tamaño del tile en píxeles
 const DEBUG_SENSORS = false;
 
 const GRAVITY    = 900;
