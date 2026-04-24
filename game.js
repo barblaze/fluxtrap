@@ -273,53 +273,35 @@ _resize() {
   }
 
   _bindEvents() {
-    const k = this.keys, g = this;
-    window.addEventListener('keydown', e => {
-      if (!g.state.started) {
-        if (g.state.loaded) {
-          g.state.started = true;
-          initAudio();
-        }
-        return;
-      }
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = true;
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') k.right = true;
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { k.jump = true; }
-    });
+    const g = this;
+    window.addEventListener('keydown', e => g._handleStart());
+    window.addEventListener('touchstart', e => { e.preventDefault(); g._handleStart(); }, { passive: false });
+    window.addEventListener('click', e => g._handleStart());
     window.addEventListener('keyup', e => {
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = false;
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') k.right = false;
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') k.jump = false;
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') g.keys.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') g.keys.right = false;
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') g.keys.jump = false;
     });
-    
-    const tc = this.canvas;
-    tc.addEventListener('touchstart', e => {
+    this.canvas.addEventListener('touchstart', e => {
       e.preventDefault();
-      if (!g.state.started) {
-        if (g.state.loaded) {
-          g.state.started = true;
-          initAudio();
-        }
-        return;
-      }
       const t = e.touches[0];
-      const rect = tc.getBoundingClientRect();
+      const rect = g.canvas.getBoundingClientRect();
       const x = t.clientX - rect.left;
-      if (x < rect.width / 2) k.left = true; else k.right = true;
-      k.jump = true;
+      if (g.keys.jump) g.keys.left = x < rect.width / 2;
+      if (g.keys.jump) g.keys.right = x >= rect.width / 2;
+      g.keys.jump = true;
     }, { passive: false });
-    tc.addEventListener('touchend', e => {
+    this.canvas.addEventListener('touchend', e => {
       e.preventDefault();
-      k.left = k.right = k.jump = false;
+      g.keys.left = g.keys.right = g.keys.jump = false;
     }, { passive: false });
-    tc.addEventListener('click', e => {
-      if (!g.state.started) {
-        if (g.state.loaded) {
-          g.state.started = true;
-          initAudio();
-        }
-      }
-    });
+  }
+
+  _handleStart() {
+    if (this.state.started) return;
+    if (!this.state.loaded) return;
+    this.state.started = true;
+    initAudio();
   }
 
   loadLevel(idx) {
@@ -540,7 +522,7 @@ _resize() {
       ctx.fillStyle = PAL.bg;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.fillStyle = '#fff';
-      ctx.font = '18px monospace';
+      ctx.font = '20px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('LOADING...', ctx.canvas.width / 2, ctx.canvas.height / 2);
       return;
@@ -550,21 +532,19 @@ _resize() {
       ctx.fillStyle = PAL.bg;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 32px monospace';
+      ctx.font = 'bold 36px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('FLUXTRAP', ctx.canvas.width / 2, ctx.canvas.height / 2 - 40);
-      ctx.font = '18px monospace';
-      ctx.fillStyle = PAL.grav;
-      ctx.fillText('START SUFFERING', ctx.canvas.width / 2, ctx.canvas.height / 2 + 20);
-      ctx.font = '14px monospace';
-      ctx.fillStyle = '#ff0';
-      ctx.fillText('TAP HERE TO START', ctx.canvas.width / 2, ctx.canvas.height / 2 + 60);
-      ctx.fillStyle = '#666';
-      ctx.fillText('LEVELS: ' + this.levelManager.count, ctx.canvas.width / 2, ctx.canvas.height / 2 + 90);
+      ctx.fillText('FLUXTRAP', ctx.canvas.width / 2, ctx.canvas.height / 2 - 50);
+      ctx.font = '20px monospace';
+      ctx.fillStyle = '#ff00aa';
+      ctx.fillText('START SUFFERING', ctx.canvas.width / 2, ctx.canvas.height / 2);
+      ctx.fillStyle = '#ffff00';
+      ctx.font = '16px monospace';
+      ctx.fillText('[ TAP TO START ]', ctx.canvas.width / 2, ctx.canvas.height / 2 + 50);
       return;
     }
     
-    const lvl = this.level;
+    if (!this.level) return;
     if (!lvl) return;
     
     ctx.fillStyle = PAL.bg;
