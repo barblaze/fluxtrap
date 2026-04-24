@@ -952,10 +952,7 @@ const p = s.player;
     }
     if (ry.hitCeiling) { p.vy = 0; }
     else p.y = ry.ny;
-    if (!wasGround && p.onGround && Math.abs(p.y - wasY) > 2) {
-      sfx('land');
-      p.stretch = 1.2;
-    }
+    
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
     
     if (!p.onGround) {
