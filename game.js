@@ -237,7 +237,8 @@ class Game {
       running: false, paused: false, lvlIdx: 0, deaths: 0,
       dying: false, deathTimer: 0, invinTimer: 0,
       flashTimer: 0, gravFlip: false, gravTimer: 0,
-      msg: '', msgTimer: 0, overlay: null
+      msg: '', msgTimer: 0, overlay: null,
+      started: false
     };
     this._lastTS = 0;
     this._bindEvents();
@@ -258,18 +259,20 @@ class Game {
     requestAnimationFrame(t => this._loop(t));
   }
 
-  _resize() {
+_resize() {
     const c = this.canvas;
-    c.width = (c.parentElement && c.parentElement.clientWidth) || 400;
+    c.width = c.parentElement && c.parentElement.clientWidth || 400;
     c.height = c.height || 300;
+    this.state.started = false;
   }
 
   _bindEvents() {
-    const k = this.keys;
+    const k = this.keys, g = this;
     window.addEventListener('keydown', e => {
+      if (!g.state.started) { g.state.started = true; initAudio(); return; }
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = true;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') k.right = true;
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { k.jump = true; initAudio(); }
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { k.jump = true; }
     });
     window.addEventListener('keyup', e => {
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = false;
@@ -280,7 +283,7 @@ class Game {
     const tc = this.canvas;
     tc.addEventListener('touchstart', e => {
       e.preventDefault();
-      initAudio();
+      if (!g.state.started) { g.state.started = true; initAudio(); return; }
       const t = e.touches[0];
       const rect = tc.getBoundingClientRect();
       const x = t.clientX - rect.left;
@@ -290,6 +293,9 @@ class Game {
     tc.addEventListener('touchend', e => {
       e.preventDefault();
       k.left = k.right = k.jump = false;
+    });
+    tc.addEventListener('click', e => {
+      if (!g.state.started) { g.state.started = true; initAudio(); }
     });
   }
 
@@ -429,6 +435,7 @@ class Game {
   _loop(ts) {
     requestAnimationFrame(t => this._loop(t));
     if (!this.state.running || this.state.paused) return;
+    if (!this.state.started) return;
     
     if (this._lastTS === 0) this._lastTS = ts;
     const rawDt = Math.min((ts - this._lastTS) * 0.001, MAX_DT);
@@ -501,7 +508,25 @@ class Game {
   }
 
   render() {
-    const ctx = this.ctx, lvl = this.level;
+    const ctx = this.ctx;
+    
+    if (!this.state.started) {
+      ctx.fillStyle = PAL.bg;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 32px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('FLUXTRAP', ctx.canvas.width / 2, ctx.canvas.height / 2 - 40);
+      ctx.font = '18px monospace';
+      ctx.fillStyle = PAL.grav;
+      ctx.fillText('START SUFFERING', ctx.canvas.width / 2, ctx.canvas.height / 2 + 20);
+      ctx.font = '14px monospace';
+      ctx.fillStyle = '#666';
+      ctx.fillText('TAP OR PRESS ANY KEY', ctx.canvas.width / 2, ctx.canvas.height / 2 + 60);
+      return;
+    }
+    
+    const lvl = this.level;
     if (!lvl) return;
     
     ctx.fillStyle = PAL.bg;
