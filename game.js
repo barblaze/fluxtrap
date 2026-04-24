@@ -238,25 +238,32 @@ class Game {
       dying: false, deathTimer: 0, invinTimer: 0,
       flashTimer: 0, gravFlip: false, gravTimer: 0,
       msg: '', msgTimer: 0, overlay: null,
-      started: false
+      started: false, loading: true, loaded: false
     };
     this._lastTS = 0;
-    this._bindEvents();
+    console.log('1. DOM Cargado');
   }
 
   async init(canvasId = 'game') {
+    console.log('2. Iniciando load...');
     const loaded = await this.levelManager.load();
+    console.log('3. JSON cargado:', loaded);
     if (!loaded) {
       this._showMsg('LOAD ERROR');
+      this.state.loading = false;
       return;
     }
+    this.state.loaded = true;
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext('2d');
     this._resize();
     window.addEventListener('resize', () => this._resize());
     this.loadLevel(0);
+    this._bindEvents();
+    console.log('4. Botón de inicio vinculado');
     this.state.running = true;
     requestAnimationFrame(t => this._loop(t));
+    console.log('5. Game Loop iniciado');
   }
 
 _resize() {
@@ -268,11 +275,12 @@ _resize() {
   _bindEvents() {
     const k = this.keys, g = this;
     window.addEventListener('keydown', e => {
-      if (!g.state.started) {
+      if (!g.state.started && g.state.loaded) {
         g.state.started = true;
         initAudio();
         return;
       }
+      if (!g.state.started) return;
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = true;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') k.right = true;
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { k.jump = true; }
@@ -286,11 +294,12 @@ _resize() {
     const tc = this.canvas;
     tc.addEventListener('touchstart', e => {
       e.preventDefault();
-      if (!g.state.started) {
+      if (!g.state.started && g.state.loaded) {
         g.state.started = true;
         initAudio();
         return;
       }
+      if (!g.state.started) return;
       const t = e.touches[0];
       const rect = tc.getBoundingClientRect();
       const x = t.clientX - rect.left;
@@ -302,7 +311,7 @@ _resize() {
       k.left = k.right = k.jump = false;
     }, { passive: false });
     tc.addEventListener('click', e => {
-      if (!g.state.started) {
+      if (!g.state.started && g.state.loaded) {
         g.state.started = true;
         initAudio();
       }
@@ -445,6 +454,7 @@ _resize() {
   _loop(ts) {
     requestAnimationFrame(t => this._loop(t));
     if (!this.state.running || this.state.paused) return;
+    if (!this.state.loaded) return;
     if (!this.state.started) return;
     
     if (this._lastTS === 0) this._lastTS = ts;
@@ -458,6 +468,7 @@ _resize() {
   _physicsStep(dt) {
     const s = this.state;
     if (!s.started) return;
+    if (!this.level) return;
     if (s.msgTimer > 0) s.msgTimer -= dt;
     if (s.invinTimer > 0) s.invinTimer = Math.max(0, s.invinTimer - dt);
     if (s.gravTimer > 0) {
@@ -521,8 +532,15 @@ _resize() {
   render() {
     const ctx = this.ctx;
     
-    const lvl = this.level;
-    if (!lvl) return;
+    if (!this.state.loaded) {
+      ctx.fillStyle = PAL.bg;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOADING...', ctx.canvas.width / 2, ctx.canvas.height / 2);
+      return;
+    }
     
     if (!this.state.started) {
       ctx.fillStyle = PAL.bg;
@@ -539,6 +557,8 @@ _resize() {
       ctx.fillText('TAP OR PRESS ANY KEY', ctx.canvas.width / 2, ctx.canvas.height / 2 + 60);
       return;
     }
+    
+    const lvl = this.level;
     if (!lvl) return;
     
     ctx.fillStyle = PAL.bg;
