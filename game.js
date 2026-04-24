@@ -942,12 +942,17 @@ const p = s.player;
     if (rx.hitWall) p.vx = 0;
     p.x = rx.nx;
     const ry = this._sweepY(p.x, p.y, dy);
-    if (ry.hitFloor) { p.onGround = true; p.vy = 0; }
+    if (ry.hitFloor) { 
+      p.onGround = true; 
+      p.vy = 0; 
+      p.y = ry.ny;
+      p.stretch = 1;
+    }
     if (ry.hitCeiling) { p.vy = 0; }
-    p.y = ry.ny;
-    if (!wasGround && p.onGround && dy > 0) {
+    else p.y = ry.ny;
+    if (!wasGround && p.onGround) {
       sfx('land');
-      p.stretch = 1 + Math.min(dy * 0.08, 0.4);
+      p.stretch = 1.2;
     }
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
     p.stretch += (1 - p.stretch) * Math.min(dt * 8, 1);
