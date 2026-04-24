@@ -263,13 +263,16 @@ _resize() {
     const c = this.canvas;
     c.width = c.parentElement && c.parentElement.clientWidth || 400;
     c.height = c.height || 300;
-    this.state.started = false;
   }
 
   _bindEvents() {
     const k = this.keys, g = this;
     window.addEventListener('keydown', e => {
-      if (!g.state.started) { g.state.started = true; initAudio(); return; }
+      if (!g.state.started) {
+        g.state.started = true;
+        initAudio();
+        return;
+      }
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = true;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') k.right = true;
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { k.jump = true; }
@@ -283,19 +286,26 @@ _resize() {
     const tc = this.canvas;
     tc.addEventListener('touchstart', e => {
       e.preventDefault();
-      if (!g.state.started) { g.state.started = true; initAudio(); return; }
+      if (!g.state.started) {
+        g.state.started = true;
+        initAudio();
+        return;
+      }
       const t = e.touches[0];
       const rect = tc.getBoundingClientRect();
       const x = t.clientX - rect.left;
       if (x < rect.width / 2) k.left = true; else k.right = true;
       k.jump = true;
-    });
+    }, { passive: false });
     tc.addEventListener('touchend', e => {
       e.preventDefault();
       k.left = k.right = k.jump = false;
-    });
+    }, { passive: false });
     tc.addEventListener('click', e => {
-      if (!g.state.started) { g.state.started = true; initAudio(); }
+      if (!g.state.started) {
+        g.state.started = true;
+        initAudio();
+      }
     });
   }
 
@@ -447,6 +457,7 @@ _resize() {
 
   _physicsStep(dt) {
     const s = this.state;
+    if (!s.started) return;
     if (s.msgTimer > 0) s.msgTimer -= dt;
     if (s.invinTimer > 0) s.invinTimer = Math.max(0, s.invinTimer - dt);
     if (s.gravTimer > 0) {
@@ -510,6 +521,9 @@ _resize() {
   render() {
     const ctx = this.ctx;
     
+    const lvl = this.level;
+    if (!lvl) return;
+    
     if (!this.state.started) {
       ctx.fillStyle = PAL.bg;
       ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -525,8 +539,6 @@ _resize() {
       ctx.fillText('TAP OR PRESS ANY KEY', ctx.canvas.width / 2, ctx.canvas.height / 2 + 60);
       return;
     }
-    
-    const lvl = this.level;
     if (!lvl) return;
     
     ctx.fillStyle = PAL.bg;
