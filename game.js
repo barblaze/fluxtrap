@@ -275,12 +275,13 @@ _resize() {
   _bindEvents() {
     const k = this.keys, g = this;
     window.addEventListener('keydown', e => {
-      if (!g.state.started && g.state.loaded) {
-        g.state.started = true;
-        initAudio();
+      if (!g.state.started) {
+        if (g.state.loaded) {
+          g.state.started = true;
+          initAudio();
+        }
         return;
       }
-      if (!g.state.started) return;
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') k.left = true;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') k.right = true;
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { k.jump = true; }
@@ -294,12 +295,13 @@ _resize() {
     const tc = this.canvas;
     tc.addEventListener('touchstart', e => {
       e.preventDefault();
-      if (!g.state.started && g.state.loaded) {
-        g.state.started = true;
-        initAudio();
+      if (!g.state.started) {
+        if (g.state.loaded) {
+          g.state.started = true;
+          initAudio();
+        }
         return;
       }
-      if (!g.state.started) return;
       const t = e.touches[0];
       const rect = tc.getBoundingClientRect();
       const x = t.clientX - rect.left;
@@ -311,9 +313,11 @@ _resize() {
       k.left = k.right = k.jump = false;
     }, { passive: false });
     tc.addEventListener('click', e => {
-      if (!g.state.started && g.state.loaded) {
-        g.state.started = true;
-        initAudio();
+      if (!g.state.started) {
+        if (g.state.loaded) {
+          g.state.started = true;
+          initAudio();
+        }
       }
     });
   }
@@ -553,8 +557,10 @@ _resize() {
       ctx.fillStyle = PAL.grav;
       ctx.fillText('START SUFFERING', ctx.canvas.width / 2, ctx.canvas.height / 2 + 20);
       ctx.font = '14px monospace';
+      ctx.fillStyle = '#ff0';
+      ctx.fillText('TAP HERE TO START', ctx.canvas.width / 2, ctx.canvas.height / 2 + 60);
       ctx.fillStyle = '#666';
-      ctx.fillText('TAP OR PRESS ANY KEY', ctx.canvas.width / 2, ctx.canvas.height / 2 + 60);
+      ctx.fillText('LEVELS: ' + this.levelManager.count, ctx.canvas.width / 2, ctx.canvas.height / 2 + 90);
       return;
     }
     
