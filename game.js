@@ -946,7 +946,7 @@ const p = s.player;
     if (ry.hitFloor) { 
       p.onGround = true; 
       p.vy = 0; 
-      p.y = ry.ny;
+      p.y = Math.round(ry.ny);
       p.stretch = 1;
     }
     if (ry.hitCeiling) { p.vy = 0; }
