@@ -1344,7 +1344,7 @@ const p = s.player;
     document.getElementById('ov-title').textContent = title;
     document.getElementById('ov-sub').textContent = sub;
     document.getElementById('ov-tip').style.display = 'none';
-    const btn = document.getElementById('ov-btn');
+    const btn = document.getElementById('ov-start');
     btn.textContent = btnTxt;
     btn.onclick = btnCb;
     document.getElementById('overlay').classList.remove('off');
@@ -1421,8 +1421,8 @@ if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
   _bindUI() {
     document.getElementById('btn-pause').addEventListener('click', () => this._togglePause());
     const startOnce = () => { initAudio(); this.start(); };
-    document.getElementById('ov-btn').addEventListener('click', startOnce, { once: true });
-    document.getElementById('ov-btn').addEventListener('touchstart', e => {
+    document.getElementById('ov-start').addEventListener('click', startOnce, { once: true });
+    document.getElementById('ov-start').addEventListener('touchstart', e => {
       e.preventDefault();
       startOnce();
     }, { once: true, passive: false });
