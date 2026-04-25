@@ -555,18 +555,6 @@ class FakeExit extends Entity {
   }
 }
 
-const ENTITY_TYPES = {
-  spike_launcher: SpikeLauncher,
-  vanish_platform: VanishPlatform,
-  drop_block: DropBlock,
-  crush_ceiling: CrushCeiling,
-  patrol_spike: PatrolSpike,
-  gravity_zone: GravityZone,
-  fake_exit: FakeExit,
-  timed_spikes: TimedSpikes,
-  moving_platform: MovingPlatform,
-};
-
 class TimedSpikes extends Entity {
   constructor(def) {
     super(def);
@@ -708,6 +696,18 @@ class MovingPlatform extends Entity {
     ctx.fillRect(x + 3, y + s - 5, s - 6, 2);
   }
 }
+
+const ENTITY_TYPES = {
+  spike_launcher: SpikeLauncher,
+  vanish_platform: VanishPlatform,
+  drop_block: DropBlock,
+  crush_ceiling: CrushCeiling,
+  patrol_spike: PatrolSpike,
+  gravity_zone: GravityZone,
+  fake_exit: FakeExit,
+  timed_spikes: TimedSpikes,
+  moving_platform: MovingPlatform,
+};
 
 function createEntity(def) {
   const Cls = ENTITY_TYPES[def.type];
