@@ -563,7 +563,151 @@ const ENTITY_TYPES = {
   patrol_spike: PatrolSpike,
   gravity_zone: GravityZone,
   fake_exit: FakeExit,
+  timed_spikes: TimedSpikes,
+  moving_platform: MovingPlatform,
 };
+
+class TimedSpikes extends Entity {
+  constructor(def) {
+    super(def);
+    this.upTime = def.upTime ?? 1.0;
+    this.downTime = def.downTime ?? 1.0;
+    this._cycleTime = this.upTime + this.downTime;
+    this._elapsed = 0;
+    this._active = false;
+    this._origTile = def.origTile ?? 0;
+  }
+
+  onTrigger(game) {
+    this._elapsed = 0;
+    this._active = true;
+    this._origTile = game.tileAt(this.col, this.row);
+    game.setTile(this.col, this.row, 3);
+  }
+
+  onUpdate(dt, game) {
+    this._elapsed += dt;
+    const cyclePos = this._elapsed % this._cycleTime;
+    const shouldBeActive = cyclePos < this.upTime;
+
+    if (shouldBeActive !== this._active) {
+      this._active = shouldBeActive;
+      game.setTile(this.col, this.row, this._active ? 3 : this._origTile);
+    }
+
+    const p = game.state.player;
+    if (this._active && _aabbOverlap(p.x, p.y, PLAYER_W, PLAYER_H, this.x, this.y, CS, CS)) {
+      game.killPlayer();
+    }
+
+    return false;
+  }
+
+  onReset(game) {
+    this._active = false;
+    this._elapsed = 0;
+    game.setTile(this.col, this.row, this._origTile);
+  }
+
+  onDraw(ctx) {
+    if (!this._active) return;
+    const x = this.x, y = this.y, s = CS;
+    ctx.fillStyle = PAL.spike;
+    ctx.beginPath();
+    ctx.moveTo(x + s / 2, y + 2);
+    ctx.lineTo(x + s - 2, y + s / 2);
+    ctx.lineTo(x + s / 2, y + s - 2);
+    ctx.lineTo(x + 2, y + s / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = PAL.spikeG;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+class MovingPlatform extends Entity {
+  constructor(def) {
+    super(def);
+    this.colEnd = def.colEnd ?? this.col + 4;
+    this.rowEnd = def.rowEnd ?? this.row;
+    this.speed = def.speed ?? 80;
+    this._px = this.x;
+    this._py = this.y;
+    this._dirX = def.dirX ?? 1;
+    this._dirY = def.dirY ?? 0;
+    this._origCol = this.col;
+    this._origRow = this.row;
+  }
+
+  onTrigger(game) {
+    this._px = this._origCol * CS;
+    this._py = this._origRow * CS;
+    this._dirX = this._dirX || 1;
+    this._dirY = this._dirY || 0;
+  }
+
+  onUpdate(dt, game) {
+    const endX = this.colEnd * CS;
+    const endY = this.rowEnd * CS;
+
+    if (this._dirX !== 0) {
+      this._px += this.speed * this._dirX * dt;
+      if (this._dirX > 0 && this._px >= endX) {
+        this._px = endX;
+        this._dirX = -1;
+      } else if (this._dirX < 0 && this._px <= this._origCol * CS) {
+        this._px = this._origCol * CS;
+        this._dirX = 1;
+      }
+    }
+
+    if (this._dirY !== 0) {
+      this._py += this.speed * this._dirY * dt;
+      if (this._dirY > 0 && this._py >= endY) {
+        this._py = endY;
+        this._dirY = -1;
+      } else if (this._dirY < 0 && this._py <= this._origRow * CS) {
+        this._py = this._origRow * CS;
+        this._dirY = 1;
+      }
+    }
+
+    const p = game.state.player;
+    if (_aabbOverlap(p.x, p.y + PLAYER_H - 4, PLAYER_W, 4, this._px + 2, this._py, CS - 4, CS)) {
+      p.x += this.speed * this._dirX * dt;
+      p.y += this.speed * this._dirY * dt;
+    }
+
+    if (_aabbOverlap(p.x, p.y, PLAYER_W, PLAYER_H, this._px, this._py, CS, CS)) {
+      game.killPlayer();
+    }
+
+    return false;
+  }
+
+  onReset(game) {
+    this._px = this._origCol * CS;
+    this._py = this._origRow * CS;
+    this._dirX = 1;
+    this._dirY = 0;
+  }
+
+  onDraw(ctx) {
+    const x = this._px, y = this._py, s = CS;
+    const grad = ctx.createLinearGradient(x, y, x, y + s);
+    grad.addColorStop(0, '#3a5a7a');
+    grad.addColorStop(1, '#1a3a5a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x + 1, y + 1, s - 2, s - 2);
+    ctx.strokeStyle = '#6a9aba';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 1, y + 1, s - 2, s - 2);
+    ctx.fillStyle = '#8abade';
+    ctx.fillRect(x + 3, y + 3, s - 6, 2);
+    ctx.fillRect(x + 3, y + s - 5, s - 6, 2);
+  }
+}
 
 function createEntity(def) {
   const Cls = ENTITY_TYPES[def.type];
