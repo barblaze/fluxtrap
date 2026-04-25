@@ -1061,7 +1061,7 @@ class Game {
       if (s.deathTimer === 0) this.respawn();
       return;
     }
-const p = s.player;
+    const p = s.player;
     const gDir = s.gravFlip ? -1 : 1;
     p.vy += GRAVITY * gDir * dt;
     if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
