@@ -754,10 +754,12 @@ class Game {
   }
 
   async init() {
+    console.log('[FLUXTRAP] Iniciando...');
     try {
       const res = await fetch('./mapa.json?v=' + Date.now());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.levels = await res.json();
+      console.log('[FLUXTRAP] Niveles cargados:', this.levels.length);
     } catch (e) {
       console.error('[FLUXTRAP] No se pudo cargar mapa.json:', e);
     }
@@ -766,9 +768,11 @@ class Game {
   }
 
   start() {
+    console.log('[FLUXTRAP] Start!');
     initAudio();
     this._hideOverlay();
     this.loadLevel(0);
+    console.log('[FLUXTRAP] Nivel cargado, canvas:', this.canvas.width, 'x', this.canvas.height);
     this.state.running = true;
     this.state.paused = false;
     this._lastTS = performance.now();
@@ -1119,6 +1123,7 @@ class Game {
   }
 
   render() {
+    console.log('[FLUXTRAP] Render - canvas:', this.canvas.width, 'x', this.canvas.height, 'running:', this.state.running);
     this._drawBackground();
     this._drawGravFlipFX();
     const lvl = this.state.lvl;
