@@ -3,12 +3,11 @@
 const PLAYER_W = 16;
 const PLAYER_H = 18;
 
-const CS = 20;  // tamaño del tile en píxeles
+const CS = 20;
 const DEBUG_SENSORS = false;
 
 const GRAVITY    = 900;
 const JUMP_VEL  = -380;
-const MOVE_ACC  = 1800;
 const MOVE_SPD  = 150;
 const MAX_FALL = 600;
 const DEATH_DUR = 1.0;
@@ -18,7 +17,6 @@ const FLASH_DUR = 0.133;
 const MSG_DUR  = 2.2;
 const TARGET_DT = 1 / 60;
 const MAX_DT    = 1 / 20;
-const FRIC = 0.85;
 
 const PAL = {
   bg: '#04060f',
@@ -48,12 +46,22 @@ function _rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 let actx = null;
 
 function initAudio() {
-  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    actx = new AC();
+    if (actx.state === 'suspended') {
+      actx.resume().catch(() => {});
+    }
+  }
 }
+
+window.addEventListener('beforeunload', () => { if (actx) actx.close().catch(() => {}); });
 
 function sfx(type) {
   try {
     if (!actx) return;
+    if (actx.state === 'suspended') { actx.resume().catch(() => {}); return; }
     const g = actx.createGain(),
           o = actx.createOscillator();
     o.connect(g);
@@ -217,7 +225,7 @@ class Entity {
       return Math.hypot(px - (tr.col + 0.5), py - (tr.row + 0.5)) <= tr.radius;
     }
     const tw = tr.w ?? 1, th = tr.h ?? 1;
-    return px >= tr.col && px <= tr.col + tw && py >= tr.row && py <= tr.row + th;
+    return px >= tr.col && px < tr.col + tw && py >= tr.row && py < tr.row + th;
   }
 
   _drawSensorDebug(ctx) {
@@ -256,6 +264,7 @@ class SpikeLauncher extends Entity {
   }
 
   onUpdate(dt, game) {
+    if (!game.state.player) return false;
     this._offset = Math.min(this._offset + this.speed * dt, this.travelDist);
     const spikeY = this.y - this._offset;
     const p = game.state.player;
@@ -299,9 +308,11 @@ class VanishPlatform extends Entity {
     this.triggerDelay = 0.08;
     this._elapsed = 0;
     this._blinkTimer = 0;
+    this._origTile = 1;
   }
 
   onTrigger(game) {
+    this._origTile = game.tileAt(this.col, this.row);
     this._elapsed = 0;
     this._blinkTimer = 0;
   }
@@ -313,7 +324,7 @@ class VanishPlatform extends Entity {
     if (progress > 0.6) {
       const blinkRate = 0.045 * (1 - progress + 0.1);
       const visible = Math.floor(this._blinkTimer / blinkRate) % 2 === 0;
-      game.setTile(this.col, this.row, visible ? 1 : 0);
+      game.setTile(this.col, this.row, visible ? this._origTile : 0);
     }
     if (this._elapsed >= this.fadeTime) {
       game.setTile(this.col, this.row, 0);
@@ -323,7 +334,7 @@ class VanishPlatform extends Entity {
   }
 
   onReset(game) {
-    game.setTile(this.col, this.row, 1);
+    game.setTile(this.col, this.row, this._origTile);
     this._elapsed = 0;
   }
 
@@ -355,6 +366,7 @@ class DropBlock extends Entity {
   }
 
   onUpdate(dt, game) {
+    if (!game.state.player) return false;
     this._speed = Math.min(this._speed + this._accel * dt, this._maxSpd);
     this._fy += this._speed * dt;
     const row = Math.floor(this._fy / CS);
@@ -403,10 +415,13 @@ class CrushCeiling extends Entity {
   }
 
   onUpdate(dt, game) {
+    if (!game.state.player) return false;
     this._fy += this.speed * this._dir * dt;
     const p = game.state.player;
     if (this._dir === 1) {
-      if (_aabbOverlap(p.x, p.y, PLAYER_W, PLAYER_H, this.x, this._fy, CS, (this.targetRow - this._origRow + 1) * CS)) {
+      const crushTop = this._fy;
+      const crushBot = this._fy + (this.targetRow - this._origRow) * CS;
+      if (_aabbOverlap(p.x, p.y, PLAYER_W, PLAYER_H, this.x, crushTop, CS, crushBot - crushTop)) {
         game.killPlayer();
       }
       if (this._fy >= this.targetRow * CS) {
@@ -425,15 +440,18 @@ class CrushCeiling extends Entity {
 
   onDraw(ctx) {
     if (this.state !== FSM.ANIMATING && this.state !== FSM.TRIGGERED) return;
-    const x = this.x, y = this._fy, h = (this.targetRow - this._origRow + 1) * CS;
-    const grad = ctx.createLinearGradient(x, y, x, y + CS);
-    grad.addColorStop(0, '#223348');
-    grad.addColorStop(1, '#0e1e2e');
-    ctx.fillStyle = grad;
-    ctx.fillRect(x + 1, y + 1, CS - 2, CS - 2);
-    ctx.strokeStyle = '#4488aa';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(x + 1, y + 1, CS - 2, CS - 2);
+    const x = this.x, y = this._fy;
+    const crushBot = this._fy + (this.targetRow - this._origRow) * CS;
+    for (let ty = y; ty < crushBot; ty += CS) {
+      const grad = ctx.createLinearGradient(x, ty, x, ty + CS);
+      grad.addColorStop(0, '#223348');
+      grad.addColorStop(1, '#0e1e2e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(x + 1, ty + 1, CS - 2, CS - 2);
+      ctx.strokeStyle = '#4488aa';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 1, ty + 1, CS - 2, CS - 2);
+    }
     ctx.strokeStyle = 'rgba(255,200,0,0.6)';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 4]);
@@ -461,6 +479,7 @@ class PatrolSpike extends Entity {
   }
 
   update(dt, game) {
+    if (!game.state.player) return;
     this._px += this.speed * this._dir * dt;
     const rightLimit = this.colEnd * CS;
     const leftLimit = this.col * CS;
@@ -540,9 +559,11 @@ class FakeExit extends Entity {
     this.triggerDelay = 0;
     this.resetDelay = def.resetDelay ?? 1.5;
     this.oneShot = def.oneShot ?? false;
+    this._origTile = 8;
   }
 
   onTrigger(game) {
+    this._origTile = game.tileAt(this.col, this.row);
     game.setTile(this.col, this.row, 3);
     game._showMsg('NICE TRY — NOT THE EXIT');
     sfx('troll');
@@ -551,7 +572,7 @@ class FakeExit extends Entity {
   onUpdate(dt, game) { return true; }
 
   onReset(game) {
-    game.setTile(this.col, this.row, 8);
+    game.setTile(this.col, this.row, this._origTile);
   }
 }
 
@@ -574,6 +595,7 @@ class TimedSpikes extends Entity {
   }
 
   onUpdate(dt, game) {
+    if (!game.state.player) return false;
     this._elapsed += dt;
     const cyclePos = this._elapsed % this._cycleTime;
     const shouldBeActive = cyclePos < this.upTime;
@@ -626,16 +648,19 @@ class MovingPlatform extends Entity {
     this._dirY = def.dirY ?? 0;
     this._origCol = this.col;
     this._origRow = this.row;
+    this._origDirX = this._dirX;
+    this._origDirY = this._dirY;
   }
 
   onTrigger(game) {
     this._px = this._origCol * CS;
     this._py = this._origRow * CS;
-    this._dirX = this._dirX || 1;
-    this._dirY = this._dirY || 0;
+    this._dirX = this._origDirX;
+    this._dirY = this._origDirY;
   }
 
   onUpdate(dt, game) {
+    if (!game.state.player) return false;
     const endX = this.colEnd * CS;
     const endY = this.rowEnd * CS;
 
@@ -662,12 +687,11 @@ class MovingPlatform extends Entity {
     }
 
     const p = game.state.player;
-    if (_aabbOverlap(p.x, p.y + PLAYER_H - 4, PLAYER_W, 4, this._px + 2, this._py, CS - 4, CS)) {
+    const riding = _aabbOverlap(p.x, p.y + PLAYER_H - 4, PLAYER_W, 4, this._px + 2, this._py, CS - 4, CS);
+    if (riding) {
       p.x += this.speed * this._dirX * dt;
       p.y += this.speed * this._dirY * dt;
-    }
-
-    if (_aabbOverlap(p.x, p.y, PLAYER_W, PLAYER_H, this._px, this._py, CS, CS)) {
+    } else if (_aabbOverlap(p.x, p.y, PLAYER_W, PLAYER_H, this._px, this._py, CS, CS)) {
       game.killPlayer();
     }
 
@@ -677,8 +701,8 @@ class MovingPlatform extends Entity {
   onReset(game) {
     this._px = this._origCol * CS;
     this._py = this._origRow * CS;
-    this._dirX = 1;
-    this._dirY = 0;
+    this._dirX = this._origDirX;
+    this._dirY = this._origDirY;
   }
 
   onDraw(ctx) {
@@ -727,7 +751,7 @@ class Game {
     this.state = {
       lvlIdx: 0,
       deaths: 0,
-      hi: +(localStorage.getItem('ft_hi') || 0),
+      hi: 0,
       player: null,
       map: null,
       lvl: null,
@@ -748,9 +772,24 @@ class Game {
     };
     this.keys = { left: false, right: false, jump: false };
     this._lastTS = 0;
+    this._loadHi();
     this._bindInput();
     this._bindButtons();
     this._bindUI();
+  }
+
+  _loadHi() {
+    try {
+      this.state.hi = +(localStorage.getItem('ft_hi') || 0);
+    } catch (e) {
+      this.state.hi = 0;
+    }
+  }
+
+  _saveHi() {
+    try {
+      localStorage.setItem('ft_hi', this.state.deaths);
+    } catch (e) {}
   }
 
   async init() {
@@ -763,6 +802,9 @@ class Game {
     } catch (e) {
       console.error('[FLUXTRAP] No se pudo cargar mapa.json:', e);
     }
+    if (this.levels.length > 0) {
+      this.loadLevel(0);
+    }
     this.resizeCanvas();
     requestAnimationFrame(ts => this._loop(ts));
   }
@@ -771,7 +813,9 @@ class Game {
     console.log('[FLUXTRAP] Start!');
     initAudio();
     this._hideOverlay();
-    this.loadLevel(0);
+    if (this.levels.length > 0) {
+      this.loadLevel(0);
+    }
     console.log('[FLUXTRAP] Nivel cargado, canvas:', this.canvas.width, 'x', this.canvas.height);
     this.state.running = true;
     this.state.paused = false;
@@ -837,13 +881,13 @@ class Game {
 
   tileAt(col, row) {
     const lvl = this.state.lvl;
-    if (col < 0 || row < 0 || col >= lvl.pw || row >= lvl.ph) return 1;
+    if (!lvl || col < 0 || row < 0 || col >= lvl.pw || row >= lvl.ph) return 1;
     return this.state.map[row * lvl.pw + col];
   }
 
   setTile(col, row, val) {
     const lvl = this.state.lvl;
-    if (col < 0 || row < 0 || col >= lvl.pw || row >= lvl.ph) return;
+    if (!lvl || col < 0 || row < 0 || col >= lvl.pw || row >= lvl.ph) return;
     this.state.map[row * lvl.pw + col] = val;
   }
 
@@ -926,7 +970,8 @@ class Game {
   }
 
   checkTriggers() {
-    const p = game.state.player;
+    const p = this.state.player;
+    if (!p) return;
     const pc = (p.x + PLAYER_W / 2) / CS, pr = (p.y + PLAYER_H / 2) / CS;
     for (const tr of this.state.triggers) {
       if (this.state.firedTriggers.has(tr.id)) continue;
@@ -963,11 +1008,13 @@ class Game {
       fb.fy += fb.speed * dt;
       const row = Math.floor(fb.fy / CS);
       if (row >= this.state.lvl.ph - 1 || this.isSolid(this.tileAt(fb.c, row + 1))) {
+        const p = this.state.player;
+        if (p) {
+          const pc = Math.floor((p.x + PLAYER_W / 2) / CS);
+          if (pc === fb.c && Math.abs(p.y + PLAYER_H / 2 - fb.fy) < CS * 1.5) this.killPlayer();
+        }
         this.setTile(fb.c, row, 1);
         this.state.fallingBlocks.splice(i, 1);
-        const p = game.state.player;
-        const pc = Math.floor((p.x + PLAYER_W / 2) / CS);
-        if (pc === fb.c && Math.abs(p.y + PLAYER_H / 2 - fb.fy) < CS * 1.5) this.killPlayer();
       }
     }
   }
@@ -997,6 +1044,7 @@ class Game {
 
   respawn() {
     const lvl = this.state.lvl, p = this.state.player;
+    if (!lvl || !p) return;
     p.x = lvl.sx * CS + CS / 2 - PLAYER_W / 2;
     p.y = lvl.sy * CS - PLAYER_H;
     p.vx = 0;
@@ -1014,7 +1062,6 @@ class Game {
 
   handleExit(ec, er) {
     if (Math.random() < 0.5) {
-      this.setTile(ec, er, 4);
       sfx('troll');
       this._showMsg('NICE TRY - NOT THE EXIT');
       setTimeout(() => this.setTile(ec, er, 8), 1500);
@@ -1028,7 +1075,7 @@ class Game {
           this._hideOverlay();
         });
     } else {
-      localStorage.setItem('ft_hi', this.state.deaths);
+      this._saveHi();
       this._showOverlay('YOU SURVIVED', `Total deaths: ${this.state.deaths}`,
         'ALL ZONES CLEARED', 'PLAY AGAIN', () => {
           this.state.deaths = 0;
@@ -1047,7 +1094,7 @@ class Game {
     const rawDt = Math.min((ts - this._lastTS) * 0.001, MAX_DT);
     this._lastTS = ts;
 
-    this._physicsStep(TARGET_DT);
+    this._physicsStep(rawDt);
     this.render();
   }
 
@@ -1066,6 +1113,7 @@ class Game {
       return;
     }
     const p = s.player;
+    if (!p) return;
     const gDir = s.gravFlip ? -1 : 1;
     p.vy += GRAVITY * gDir * dt;
     if (Math.abs(p.vy) > MAX_FALL) p.vy = MAX_FALL * Math.sign(p.vy);
@@ -1074,8 +1122,8 @@ class Game {
     else if (this.keys.right) p.vx = MOVE_SPD;
     else p.vx = 0;
 
-    if (this.keys.jump && (p.onGround || s.gravFlip)) {
-      p.vy = JUMP_VEL * (s.gravFlip ? -1 : 1);
+    if (this.keys.jump && p.onGround) {
+      p.vy = JUMP_VEL * gDir;
       p.onGround = false;
       p.stretch = 1.3;
       sfx('jump');
@@ -1084,25 +1132,34 @@ class Game {
 
     p.trailPts.push({ x: p.x, y: p.y });
     if (p.trailPts.length > 6) p.trailPts.shift();
-    const wasGround = p.onGround;
-    const wasY = p.y;
     p.onGround = false;
     const dx = p.vx * dt, dy = p.vy * dt;
     const rx = this._sweepX(p.x, p.y, dx);
     if (rx.hitWall) p.vx = 0;
     p.x = rx.nx;
     const ry = this._sweepY(p.x, p.y, dy);
-    if (ry.hitFloor) { 
-      p.onGround = true; 
-      p.vy = 0; 
-      p.y = Math.round(ry.ny);
-      p.stretch = 1;
+    if (s.gravFlip) {
+      if (ry.hitCeiling) {
+        p.onGround = true;
+        p.vy = 0;
+        p.y = Math.round(ry.ny);
+        p.stretch = 1;
+      }
+      if (ry.hitFloor) { p.vy = 0; }
+      else p.y = ry.ny;
+    } else {
+      if (ry.hitFloor) {
+        p.onGround = true;
+        p.vy = 0;
+        p.y = Math.round(ry.ny);
+        p.stretch = 1;
+      }
+      if (ry.hitCeiling) { p.vy = 0; }
+      else p.y = ry.ny;
     }
-    if (ry.hitCeiling) { p.vy = 0; }
-    else p.y = ry.ny;
-    
+
     this._checkSpecialUnderfoot(p.x, p.y, p.vy);
-    
+
     if (!p.onGround) {
       p.stretch = 1 + (p.vy < 0 ? 0.2 : -0.1);
     } else {
@@ -1112,7 +1169,8 @@ class Game {
     p.eyeAng = 0;
     p.blinking = 0;
     if (this.touchesSpike(p.x, p.y)) this.killPlayer();
-    if (p.y > this.canvas.height + CS || p.y < -CS * 2) this.killPlayer();
+    const worldH = s.lvl ? s.lvl.ph * CS : this.canvas.height;
+    if (p.y > worldH + CS || p.y < -CS * 2) this.killPlayer();
     this.checkTriggers();
     this._updateFallingBlocks(dt);
     const c0 = Math.floor(p.x / CS), c1 = Math.floor((p.x + PLAYER_W - 1) / CS);
@@ -1123,10 +1181,10 @@ class Game {
   }
 
   render() {
-    console.log('[FLUXTRAP] Render - canvas:', this.canvas.width, 'x', this.canvas.height, 'running:', this.state.running);
     this._drawBackground();
     this._drawGravFlipFX();
     const lvl = this.state.lvl;
+    if (!lvl) return;
     for (let r = 0; r < lvl.ph; r++) for (let c = 0; c < lvl.pw; c++) {
       const t = this.tileAt(c, r);
       if (t !== 0) this._drawTile(c, r, t);
@@ -1267,7 +1325,9 @@ class Game {
 
   _drawPlayer() {
     if (this.state.dying) return;
-    const p = this.state.player, ctx = this.ctx;
+    const p = this.state.player;
+    if (!p) return;
+    const ctx = this.ctx;
     const inv = this.state.invinTimer > 0 && Math.floor(this.state.invinTimer / (4 / 60)) % 2 === 0;
     const px = Math.round(p.x), py = Math.round(p.y), w = PLAYER_W, h = PLAYER_H;
 
@@ -1317,7 +1377,9 @@ class Game {
 
   _drawDeathAnim() {
     if (!this.state.dying) return;
-    const ctx = this.ctx, p = this.state.player;
+    const p = this.state.player;
+    if (!p) return;
+    const ctx = this.ctx;
     const t = 1 - (this.state.deathTimer / DEATH_DUR);
     for (let i = 0; i < 8; i++) {
       const ang = (i / 8) * Math.PI * 2 + t * 4, dist = t * CS * 1.8;
@@ -1376,7 +1438,7 @@ class Game {
       if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { this._togglePause(); return; }
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.keys.left = true;
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.keys.right = true;
-if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         this.keys.jump = true;
       }
       e.preventDefault();
@@ -1400,7 +1462,6 @@ if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
     el.oncontextmenu = (e) => e.preventDefault();
     el.ontouchcancel = (e) => {
       this.keys[keyName] = false;
-      this.keys.jumpJustPressed = false;
       el.classList.remove('pressed');
     };
     const doDown = (e) => {
